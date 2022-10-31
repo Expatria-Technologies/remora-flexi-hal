@@ -1,0 +1,7 @@
+#!/bin/bash
+
+echo "Resetting board..."
+raspi-gpio set 17 op dl
+sleep 1
+raspi-gpio set 17 ip
+echo "Done!"
