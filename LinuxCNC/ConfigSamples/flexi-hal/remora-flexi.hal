@@ -5,8 +5,22 @@
 	loadrt [EMCMOT]EMCMOT base_period_nsec=[EMCMOT]BASE_PERIOD servo_period_nsec=[EMCMOT]SERVO_PERIOD num_joints=[KINS]JOINTS
 
 	loadrt flexi chip_type=STM SPI_clk_div=32 PRU_base_freq=120000
+	loadrt not names=stepen_not,stepen_z_not,probe_basic_time_not
+	loadrt time names=probe_basic_time_time
+	#loadusr -W vfdmod --debug vfdmod.ini
+	loadusr -W vfdmod vfdmod.ini
 
-	loadrt not names=stepen_not,stepen_z_not
+
+# probe_basic time
+	addf probe_basic_time_time servo-thread
+	addf probe_basic_time_not servo-thread
+
+# vfdmod
+	net spindle-speed-cmd => vfdmod.spindle.rpm-in <= spindle.0.speed-out
+	net spindle-speed-fb => vfdmod.spindle.rpm-out <= spindle.0.speed-in
+	net spindle-at-speed <= vfdmod.spindle.at-speed <= spindle.0.at-speed
+	net spindle-forward => vfdmod.control.run-forward <= spindle.0.forward
+	net spindle-reverse => vfdmod.control.run-reverse <= spindle.0.reverse
 
 
 # estop loopback, SPI comms enable and feedback
@@ -92,14 +106,14 @@
 # Motor enables
 
 	#inverted 
-	net j0enable => stepen_not.in
-	net stepen_inv => stepen_not.out <= flexi.output.STEP_EN
-	net j2enable => stepen_z_not.in
-	net stepen_z_inv => stepen_z_not.out <= flexi.output.STEP_EN_Z
+	#net j0enable => stepen_not.in
+	#net stepen_inv => stepen_not.out <= flexi.output.STEP_EN
+	#net j2enable => stepen_z_not.in
+	#net stepen_z_inv => stepen_z_not.out <= flexi.output.STEP_EN_Z
 
 	#non-inverted
-	#net j0enable => flexi.output.STEP_EN
-	#net j2enable => flexi.output.STEP_EN_Z
+	net j0enable => flexi.output.STEP_EN
+	net j2enable => flexi.output.STEP_EN_Z
 
 
 

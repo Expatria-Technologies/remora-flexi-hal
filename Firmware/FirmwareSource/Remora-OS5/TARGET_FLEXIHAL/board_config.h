@@ -56,8 +56,8 @@ DigitalPinConfig DOConfigs[] = {{"AUX2", "PA_4", PULLNONE, false, 0}, //Comment,
                                 {"SPINDLE_EN", "PB_2", PULLNONE, false, 4},
                                 {"AUX0", "PB_13", PULLNONE, false, 5},
                                 {"COOLANT", "PC_9", PULLNONE, false, 6},
-                                {"STEP_EN", "PA_13", PULLNONE, true, 7},
-                                {"STEP_EN_Z", "PA_14", PULLNONE, true, 8},
+                                {"STEP_EN", "PA_13", PULLNONE, false, 7},
+                                {"STEP_EN_Z", "PA_14", PULLNONE, false, 8},
                                 {"SPINDLE_DIR", "PB_1", PULLNONE, true, 9}};
 
 DigitalPinConfig DIConfigs[] = {{"X_LIMIT", "PA_5", PULLNONE, true, 0}, //Comment, pin, modifier, invert, data bit
