@@ -1,7 +1,8 @@
 
 # Remora Flexi-HAL
 
-This is a port of the excellent Remora firmware for the Flexi-HAL. 
+This is a port of the excellent Remora firmware for the Flexi-HAL.  
+https://github.com/Expatria-Technologies/Flexi-HAL
 
 Different in this fork from the 'standard' Remora is the lack of a config file. The board has a well defined set of inputs and outputs, typically with a single function. Within the LinuxCNC component the 'pins' are named intuitively to attempt to make HAL configuration easier. Pins are defined in board_config.h and the modules loaded in main.cpp in an attempt to keep the modules unmodified for easier maintenance as they are developed upstream.
 
