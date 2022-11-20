@@ -7,6 +7,7 @@
 	loadrt flexi chip_type=STM SPI_clk_div=32 PRU_base_freq=120000
 	loadrt not names=stepen_not,stepen_z_not,probe_basic_time_not
 	loadrt time names=probe_basic_time_time
+	loadrt estop_latch names=estop_latch
 	#loadusr -W vfdmod --debug vfdmod.ini
 	loadusr -W vfdmod vfdmod.ini
 
@@ -14,6 +15,17 @@
 # probe_basic time
 	addf probe_basic_time_time servo-thread
 	addf probe_basic_time_not servo-thread
+
+# add the remora and motion functions to threads
+
+	addf flexi.read servo-thread
+	addf motion-command-handler servo-thread
+	addf motion-controller servo-thread
+	addf flexi.update-freq servo-thread
+	addf flexi.write servo-thread
+	addf stepen_not servo-thread
+	addf stepen_z_not servo-thread
+	addf estop_latch servo-thread
 
 # vfdmod
 	net spindle-speed-cmd => vfdmod.spindle.rpm-in <= spindle.0.speed-out
@@ -25,19 +37,11 @@
 
 # estop loopback, SPI comms enable and feedback
 	net user-enable-out <= iocontrol.0.user-enable-out => flexi.SPI-enable
-	net user-request-enable <= iocontrol.0.user-request-enable => flexi.SPI-reset
-	net remora-status <= flexi.SPI-status => iocontrol.0.emc-enable-in
-	
-
-# add the remora and motion functions to threads
-
-	addf flexi.read servo-thread
-	addf motion-command-handler servo-thread
-	addf motion-controller servo-thread
-	addf flexi.update-freq servo-thread
-	addf flexi.write servo-thread
-	addf stepen_not servo-thread
-	addf stepen_z_not servo-thread
+	net user-request-enable <= iocontrol.0.user-request-enable => flexi.SPI-reset estop_latch.reset
+	#estop_latch returns 'ok' when fault-in is false, ok-in is true, and reset changes from false to true. 
+	net estop-fault_in <= flexi.input.HALT => estop_latch.fault-in
+	net remora-status <= flexi.SPI-status => estop_latch.ok-in
+	net estop-status <= estop_latch.ok-out => iocontrol.0.emc-enable-in
 
 
 # Joint 0 setup
@@ -119,7 +123,7 @@
 
 # User Buttons
 
-net halt-button	<= halui.program.stop => flexi.input.HALT
+#Halt is shared with motor alarms and is up in the estop loop.
 #net hold-button <= halui.program.pause => flexi.input.HOLD #will likely need a toggle. See jog2k.
 #net start-button <= halui.program.run <= flexi.input.CYC_START # add toggle to single step when in hold
 
