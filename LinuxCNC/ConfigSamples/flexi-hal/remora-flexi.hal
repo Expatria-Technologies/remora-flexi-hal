@@ -139,10 +139,14 @@
 #net hold-button <= halui.program.pause => flexi.input.HOLD #will likely need a toggle. See jog2k.
 #net start-button <= halui.program.run <= flexi.input.CYC_START # add toggle to single step when in hold
 
+# Probe
+net probe <= motion.probe-input => flexi.input.PROBE
+
 # Manual toolchange
 
 loadusr -W hal_manualtoolchange
-net tool-change iocontrol.0.tool-change => hal_manualtoolchange.change
-net tool-changed iocontrol.0.tool-changed <= hal_manualtoolchange.changed
-net tool-number iocontrol.0.tool-prep-number => hal_manualtoolchange.number
-net tool-prepare-loopback iocontrol.0.tool-prepare => iocontrol.0.tool-prepared
+net tool-change => iocontrol.0.tool-change => hal_manualtoolchange.change
+net tool-changed <= iocontrol.0.tool-changed <= hal_manualtoolchange.changed
+net tool-number => iocontrol.0.tool-prep-number => hal_manualtoolchange.number
+net tool-prepare-loopback <= iocontrol.0.tool-prepare => iocontrol.0.tool-prepared
+
