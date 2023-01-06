@@ -15,6 +15,8 @@ Firmware must be built with Mbed Studio with the 'FLEXIHAL' target, and the 'Rel
 Included under 'releases' is a Pi 4 image which built on the official LinuxCNC image. It is pre-configured with all of the required dependencies. The base configuration runs Probe Basic, and it functions as expected apart from the ATC tab, which currently does nothing. Unzip it and flash it to an SD card using dd, balenaEtcher, or the tool of your choice. The filesystem will be automatically resized on first boot to fill the entirety of the SD card. 
 
 The minimum SD card size is 8GB, though a 16GB or larger card is recommended. A U3 High Endurance card from a reputable manufacturer is the preferred option, such as those available from Sandisk. Slower cards will result in a noticeable reduction in performance. 
+
+**Running the updater built into the Pi wizard will currently result in the image not booting after updating. Skip the updates until this can be corrected.** 
  
 ---
 # Remora
