@@ -8,8 +8,7 @@
 	loadrt not names=stepen_not,stepen_z_not,probe_basic_time_not
 	loadrt time names=probe_basic_time_time
 	loadrt estop_latch names=estop_latch
-	#loadusr -W vfdmod --debug vfdmod.ini
-	loadusr -W vfdmod vfdmod.ini
+	
 
 
 # probe_basic time
@@ -27,13 +26,24 @@
 	addf stepen_z_not servo-thread
 	addf estop_latch servo-thread
 
-# vfdmod
+# vfdmod - uncomment the below if using vfdmod (default)
+	loadusr -W vfdmod vfdmod.ini
 	net spindle-speed-cmd => vfdmod.spindle.rpm-in <= spindle.0.speed-out
 	net spindle-speed-fb => vfdmod.spindle.rpm-out <= spindle.0.speed-in
 	net spindle-at-speed <= vfdmod.spindle.at-speed <= spindle.0.at-speed
 	net spindle-forward => vfdmod.control.run-forward <= spindle.0.forward
 	net spindle-reverse => vfdmod.control.run-reverse <= spindle.0.reverse
 
+# hy_vfd - uncomment the below if using hy_vfd
+	#loadusr -Wn vfd hy_vfd -n vfd -d /dev/ttyAMA1 -p none -S24000 -r 9600 -s 1
+	#setp vfd.enable 1
+	#net spindle-speed-cmd => vfd.speed-command <= spindle.0.speed-out
+	#net spindle-speed-fb => vfd.spindle-speed-fb <= spindle.0.speed-in
+	#net spindle-at-speed <= vfd.spindle-at-speed <= spindle.0.at-speed
+	#net spindle-forward => vfd.spindle-forward <= spindle.0.forward
+	#net spindle-reverse => vfd.spindle-reverse <= spindle.0.reverse
+	#net spindle-on => vfd.spindle-on <= spindle.0.on
+	#net spindle-comm-ok <= vfd.hycomm-ok
 
 # estop loopback, SPI comms enable and feedback
 	net user-enable-out <= iocontrol.0.user-enable-out => flexi.SPI-enable
