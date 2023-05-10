@@ -7,6 +7,10 @@ Different in this fork from the 'standard' Remora is the lack of a config file. 
 
 Integration with the UF2 bootloader that ships on the Flexi-HAL is still a WIP; at this point the image must be installed via DFU or via the serial bootloader and will overwrite the UF2 bootloader. A script is provided in the Tools directory to do this from the Pi via the Pi header, including resetting the STM32 and managing the boot0 pin. This script can be used to re-install the UF2 bootloader as well if desired. stm32flash will need to be installed on the Pi (it is pre-installed in the Flexi-Pi image).
 
+The uf2 bootloader can be found here if you want to restore it:
+
+https://github.com/Expatria-Technologies/tinyuf2/releases
+
 Firmware must be built with Mbed Studio with the 'FLEXIHAL' target, and the 'Release' configuration must be selected. A pre-compiled binary is provided in the FirmwareBin directory for convenience. 
 
 
