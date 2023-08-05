@@ -38,7 +38,7 @@
 #toggle2nist states & mux selectors
 	net program-is-paused hold_toggle.is-on <= halui.program.is-paused
 
-# vfdmod - uncomment the below if using vfdmod (default)
+# vfdmod - uncomment the below if using vfdmod (default). There are also a couple items to edit in spindle_load.hal
 	loadusr -W vfdmod vfdmod.ini
 	net spindle-speed-cmd vfdmod.spindle.rpm-in <= spindle.0.speed-out
 	net spindle-speed-fb vfdmod.spindle.rpm-out <= spindle.0.speed-in
@@ -46,7 +46,7 @@
 	net spindle-forward vfdmod.control.run-forward <= spindle.0.forward
 	net spindle-reverse vfdmod.control.run-reverse <= spindle.0.reverse
 
-# hy_vfd - uncomment the below if using hy_vfd
+# hy_vfd - uncomment the below if using hy_vfd. There are also a couple items to edit in spindle_load.hal
 	#loadusr -Wn vfd hy_vfd -n vfd -d /dev/ttyAMA1 -p none -S24000 -r 9600 -s 1
 	#setp vfd.enable 1
 	#net spindle-speed-cmd vfd.speed-command <= spindle.0.speed-out
@@ -56,6 +56,14 @@
 	#net spindle-reverse vfd.spindle-reverse <= spindle.0.reverse
 	#net spindle-on vfd.spindle-on <= spindle.0.on
 	#net spindle-comm-ok <= vfd.hycomm-ok
+	
+# Analog spindle control - Uncomment if using PWM or analog. You will also need to comment out spindle_load.hal in postgui_call_list.hal.
+	#loadrt scale names=spindle_speed_scale
+	#addf spindle_speed_scale servo-thread
+	#setp spindle_speed_scale.gain 0.004167 # volts per RPM, calculated over full scale. [max output voltage]/[Max spindle speed] * 10 Example: 0-10V, 24000 rpm: (10/24000) * 10 = 0.004167
+	#net spindle-scale-in spindle.0.speed-out => spindle_speed_scale.in
+	#net spindle-speed-scaled spindle_speed_scale.out => flexi.SP.SPINDLE_PWM
+	#net spindle-enable spindle.0.on => flexi.output.SPINDLE_EN
 
 # estop loopback, SPI comms enable and feedback
 	net user-enable-out iocontrol.0.user-enable-out => flexi.SPI-enable
