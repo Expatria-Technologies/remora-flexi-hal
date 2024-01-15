@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# change back to home directory
+cd
+
 if [ -z $1 ]
 then
         echo "File not specified! Usage: flash_flexi [file]"
