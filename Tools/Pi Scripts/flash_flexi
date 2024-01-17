@@ -1,11 +1,14 @@
 #!/bin/bash
 
+# change back to home directory
+cd
+
 if [ -z $1 ]
 then
         echo "File not specified! Usage: flash_flexi [file]"
         exit
 fi
 
-./bootloader_flexi
+~/bootloader_flexi
 stm32flash /dev/ttyAMA0 -b 115200 -w $1
-./reset_flexi
+~/reset_flexi
