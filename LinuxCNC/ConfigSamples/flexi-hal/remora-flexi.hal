@@ -39,7 +39,8 @@
 	net program-is-paused hold_toggle.is-on <= halui.program.is-paused
 
 # vfdmod - uncomment the below if using vfdmod (default). There are also a couple items to edit in spindle_load.hal
-	loadusr -W vfdmod vfdmod.ini
+	loadusr -W vfdmod vfdmod.ini # Configured for Durapulse GS10
+	# loadusr -W vfdmod vfdmod_h100-v70.ini # Configured for H100 (H100-XXX-XX) or Stepper Online V70 (V70-XXX) VFDs
 	net spindle-speed-cmd vfdmod.spindle.rpm-in <= spindle.0.speed-out
 	net spindle-speed-fb vfdmod.spindle.rpm-out <= spindle.0.speed-in
 	net spindle-at-speed vfdmod.spindle.at-speed <= spindle.0.at-speed
