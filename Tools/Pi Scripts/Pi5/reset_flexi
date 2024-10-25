@@ -1,0 +1,7 @@
+#!/bin/bash
+
+echo "Resetting board..."
+gpioset gpiochip4 17=0
+sleep 1
+gpioget gpiochip4 17 > /dev/null
+echo "Done!"
