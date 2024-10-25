@@ -1,0 +1,16 @@
+#!/bin/bash
+
+echo "Entering bootloader..."
+
+#Serial port needs to be open when toggling GPIOs to get board to enter serial bootloader
+stty -F /dev/ttyAMA0 115200
+read -t 5 < /dev/ttyAMA0 &
+
+gpioset gpiochip4 18=1
+sleep 1
+gpioset gpiochip4 17=0
+sleep 1
+gpioget gpiochip4 17 > /dev/null
+sleep 1
+gpioget gpiochip4 18 > /dev/null
+sleep 2
