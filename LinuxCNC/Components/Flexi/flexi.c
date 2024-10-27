@@ -86,7 +86,7 @@ typedef struct
 	hal_float_t *setPoint[VARIABLES];
 	hal_float_t *processVariable[VARIABLES];
 	hal_bit_t *outputs[DIGITAL_OUTPUTS];
-	hal_bit_t *inputs[DIGITAL_INPUTS];
+	hal_bit_t *inputs[DIGITAL_INPUTS * 2]; // multiplied by 2 for inverted 'not' pins passed through to LinuxCNC
 } data_t;
 
 static data_t *data;
@@ -437,7 +437,13 @@ if (bcm == true)
 		//		retval = hal_pin_bit_newf(HAL_OUT, &(data->inputs[n]),
 		//								  comp_id, "%s.input.%01d", prefix, n);
 		retval = hal_pin_bit_newf(HAL_OUT, &(data->inputs[n]),
-				comp_id, "%s.input.%s", prefix, INPUT_NAMES[n]);
+								  comp_id, "%s.input.%s", prefix, INPUT_NAMES[n]);
+		if (retval != 0)
+			goto error;
+		*(data->inputs[n]) = 0;
+
+      retval = hal_pin_bit_newf(HAL_OUT, &(data->inputs[n + DIGITAL_INPUTS]), //inverted 'not' pins offset by the number of inputs we have. 
+								  comp_id, "%s.input.%s.not", prefix, INPUT_NAMES[n]);
 		if (retval != 0)
 			goto error;
 		*(data->inputs[n]) = 0;
@@ -1107,10 +1113,12 @@ void spi_read()
 					if ((rxData.inputs & (1 << i)) != 0)
 					{
 						*(data->inputs[i]) = 1; // input is high
+						*(data->inputs[i + DIGITAL_INPUTS]) = 0; // inverted 'not' is offset by number of digital inputs.
 					}
 					else
 					{
 						*(data->inputs[i]) = 0; // input is low
+						*(data->inputs[i + DIGITAL_INPUTS]) = 1; // inverted 'not' is offset by number of digital inputs.
 					}
 				}
 				break;
