@@ -599,9 +599,9 @@ int rt_peripheral_init(void)
 		bcm2835_spi_setBitOrder(BCM2835_SPI_BIT_ORDER_MSBFIRST);      // The default
 		bcm2835_spi_setDataMode(BCM2835_SPI_MODE0);                   // The default
 
-		//bcm2835_spi_setClockDivider(BCM2835_SPI_CLOCK_DIVIDER_128);		// 3.125MHz on RPI3
-		//bcm2835_spi_setClockDivider(BCM2835_SPI_CLOCK_DIVIDER_64);		// 6.250MHz on RPI3
-		bcm2835_spi_setClockDivider(BCM2835_SPI_CLOCK_DIVIDER_32);		// 12.5MHz on RPI3
+		//bcm2835_spi_setClockDivider(BCM2835_SPI_CLOCK_DIVIDER_128);
+		//bcm2835_spi_setClockDivider(BCM2835_SPI_CLOCK_DIVIDER_64);
+		bcm2835_spi_setClockDivider(BCM2835_SPI_CLOCK_DIVIDER_32);		// 15.625MHz on RPI4
 
 		bcm2835_spi_chipSelect(BCM2835_SPI_CS0);                      // The default
 		bcm2835_spi_setChipSelectPolarity(BCM2835_SPI_CS0, LOW);      // the default
@@ -628,7 +628,7 @@ int rt_peripheral_init(void)
 		}
 
 		// TODO: Allow user to select SPI number, CS number and frequency
-		rp1spi_init(0, 0, SPI_MODE_0, 10000000);  // SPIx, CSx, mode, freq
+		rp1spi_init(0, 0, SPI_MODE_0, 15000000);  // SPIx, CSx, mode, freq. Clock frequency here is different than Pi4, this will get rounded to nearest clock divider. TODO Figure out exact value that works best with Flexi.
 	}
 	else
 	{
