@@ -600,8 +600,8 @@ int rt_peripheral_init(void)
 		bcm2835_spi_setDataMode(BCM2835_SPI_MODE0);                   // The default
 
 		//bcm2835_spi_setClockDivider(BCM2835_SPI_CLOCK_DIVIDER_128);		// 3.125MHz on RPI3
-		bcm2835_spi_setClockDivider(BCM2835_SPI_CLOCK_DIVIDER_64);		// 6.250MHz on RPI3
-		//bcm2835_spi_setClockDivider(BCM2835_SPI_CLOCK_DIVIDER_32);		// 12.5MHz on RPI3
+		//bcm2835_spi_setClockDivider(BCM2835_SPI_CLOCK_DIVIDER_64);		// 6.250MHz on RPI3
+		bcm2835_spi_setClockDivider(BCM2835_SPI_CLOCK_DIVIDER_32);		// 12.5MHz on RPI3
 
 		bcm2835_spi_chipSelect(BCM2835_SPI_CS0);                      // The default
 		bcm2835_spi_setChipSelectPolarity(BCM2835_SPI_CS0, LOW);      // the default
