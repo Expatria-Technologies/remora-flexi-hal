@@ -7,13 +7,13 @@
  *				Further developed for RaspberryPi -> Smoothieboard and clones (LPC1768).
  *
  * Author: Scott Alford
- * License: GPL Version 2
+ * License: GPL Version 3
  *
  *		Credit to GP Orcullo and PICnc V2 which originally inspired this
  *		and portions of this code is based on stepgen.c by John Kasunich
  *		and hm2_rpspi.c by Matsche
  *
- * Copyright (c) 2021	All rights reserved.
+ * Copyright (c) 2024	All rights reserved.
  *
  * Last change:
  ********************************************************************/
@@ -35,14 +35,22 @@
 #include "bcm2835.h"
 #include "bcm2835.c"
 
+// Raspberry Pi 5 uses the RP1
+#include "rp1lib.h"
+#include "rp1lib.c"
+#include "gpiochip_rp1.h"
+#include "gpiochip_rp1.c"
+#include "spi-dw.h"
+#include "spi-dw.c"
 #include "flexi.h"
 
 #define MODNAME "flexi"
 #define PREFIX "flexi"
 
 MODULE_AUTHOR("Scott Alford AKA scotta");
-MODULE_DESCRIPTION("Driver for Remora LPC1768 control board");
-MODULE_LICENSE("GPL v2");
+MODULE_DESCRIPTION("Driver for Remora STM32 control boards");
+MODULE_LICENSE("GPL v3");
+#define RPI5_RP1_PERI_BASE 0x7c000000
 
 /***********************************************************************
  *                STRUCTURES AND GLOBAL VARIABLES                       *
@@ -130,6 +138,8 @@ static rxData_t rxData;
 static int comp_id; // component ID
 static const char *modname = MODNAME;
 static const char *prefix = PREFIX;
+static bool			bcm;					// use BCM2835 driver
+static bool			rp1;					// use RP1 driver
 static int num_chan = 0; // number of step generators configured
 static long old_dtns;	 // update_freq function period in nsec - (THIS IS RUNNING IN THE PI)
 static double dt;		 // update_freq period in seconds  - (THIS IS RUNNING IN THE PI)
@@ -153,13 +163,7 @@ typedef enum CONTROL
 char *ctrl_type[JOINTS] = {"p"};
 RTAPI_MP_ARRAY_STRING(ctrl_type, JOINTS, "control type (pos or vel)");
 
-enum CHIP
-{
-	LPC,
-	STM
-} chip;
-char *chip_type = {"STM"}; // default to LPC
-RTAPI_MP_STRING(chip_type, "PRU chip type; LPC or STM");
+
 
 int SPI_clk_div = 32;
 RTAPI_MP_INT(SPI_clk_div, "SPI clock divider");
@@ -170,7 +174,9 @@ RTAPI_MP_INT(PRU_base_freq, "PRU base thread frequency");
 /***********************************************************************
  *                  LOCAL FUNCTION DECLARATIONS                         *
  ************************************************************************/
+static int rt_peripheral_init(void);
 static int rt_bcm2835_init(void);
+static int rt_rp1lib_init(void);
 
 static void update_freq(void *arg, long period);
 static void spi_write();
@@ -199,23 +205,7 @@ int rtapi_app_main(void)
 		}
 	}
 
-	// check to see PRU chip type has been set at the command line
-	if (!strcmp(chip_type, "LPC") || !strcmp(chip_type, "lpc"))
-	{
-		rtapi_print_msg(RTAPI_MSG_INFO, "PRU: Chip type set to LPC\n");
-		chip = LPC;
-	}
-	else if (!strcmp(chip_type, "STM") || !strcmp(chip_type, "stm"))
-	{
-		rtapi_print_msg(RTAPI_MSG_INFO, "PRU: Chip type set to STM\n");
-		chip = STM;
-	}
-	else
-	{
-		rtapi_print_msg(RTAPI_MSG_ERR, "ERROR: PRU chip type (must be 'LPC' or 'STM')\n");
-		return -1;
-	}
-
+	
 	// check to see if the PRU base frequency has been set at the command line
 	if (PRU_base_freq != -1)
 	{
@@ -248,104 +238,69 @@ int rtapi_app_main(void)
 		return -1;
 	}
 
-	// Map the RPi BCM2835 peripherals - uses "rtapi_open_as_root" in place of "open"
-	if (!rt_bcm2835_init())
+	bcm = false;
+	rp1 = false;
+
+	// initialise the gpio and spi peripherals
+	if(!rt_peripheral_init())
 	{
-		rtapi_print_msg(RTAPI_MSG_ERR, "rt_bcm2835_init failed. Are you running with root privlages??\n");
-		return -1;
+	  rtapi_print_msg(RTAPI_MSG_ERR,"rt_peripheral_init failed.\n");
+      return -1;
+
 	}
 
-	// Set the SPI0 pins to the Alt 0 function to enable SPI0 access, setup CS register
-	// and clear TX and RX fifos
-	if (!bcm2835_spi_begin())
-	{
-		rtapi_print_msg(RTAPI_MSG_ERR, "bcm2835_spi_begin failed. Are you running with root privlages??\n");
-		return -1;
-	}
+	// export remoraPRU SPI enable and status bits
 
-	// Configure SPI0
-	bcm2835_spi_setBitOrder(BCM2835_SPI_BIT_ORDER_MSBFIRST); // The default
-	bcm2835_spi_setDataMode(BCM2835_SPI_MODE0);				 // The default
-
-	// bcm2835_spi_setClockDivider(BCM2835_SPI_CLOCK_DIVIDER_128);		// 3.125MHz on RPI3
-	// bcm2835_spi_setClockDivider(BCM2835_SPI_CLOCK_DIVIDER_64);		// 6.250MHz on RPI3
-	// bcm2835_spi_setClockDivider(BCM2835_SPI_CLOCK_DIVIDER_32);		// 12.5MHz on RPI3
-	// bcm2835_spi_setClockDivider(BCM2835_SPI_CLOCK_DIVIDER_16);		// 25MHz on RPI3
-
-	if (chip == LPC)
-	{
-		bcm2835_spi_setClockDivider(BCM2835_SPI_CLOCK_DIVIDER_64);
-		rtapi_print_msg(RTAPI_MSG_INFO, "PRU: SPI default clk divider set to 64\n");
-	}
-	else if (chip == STM)
-	{
-		bcm2835_spi_setClockDivider(BCM2835_SPI_CLOCK_DIVIDER_16);
-		rtapi_print_msg(RTAPI_MSG_INFO, "PRU: SPI default clk divider set to 16\n");
-	}
-
-	// check if the default SPI clock divider has been overriden at the command line
-	if (SPI_clk_div != -1)
-	{
-		// check that the setting is a power of 2
-		if ((SPI_clk_div & (SPI_clk_div - 1)) == 0)
-		{
-			bcm2835_spi_setClockDivider(SPI_clk_div);
-			rtapi_print_msg(RTAPI_MSG_INFO, "PRU: SPI clk divider overridden and set to %d\n", SPI_clk_div);
-		}
-		else
-		{
-			// it's not a power of 2
-			rtapi_print_msg(RTAPI_MSG_ERR, "ERROR: PRU SPI clock divider incorrect\n");
-			return -1;
-		}
-	}
-
-	bcm2835_spi_chipSelect(BCM2835_SPI_CS0);				 // The default
-	bcm2835_spi_setChipSelectPolarity(BCM2835_SPI_CS0, LOW); // the default
-
-	/* RPI_GPIO_P1_19        = 10 		MOSI when SPI0 in use
-	 * RPI_GPIO_P1_21        =  9 		MISO when SPI0 in use
-	 * RPI_GPIO_P1_23        = 11 		CLK when SPI0 in use
-	 * RPI_GPIO_P1_24        =  8 		CE0 when SPI0 in use
-	 * RPI_GPIO_P1_26        =  7 		CE1 when SPI0 in use
-	 */
-
-	// Configure pullups on SPI0 pins - source termination and CS high (does this allows for higher clock frequencies??? wiring is more important here)
-	bcm2835_gpio_set_pud(RPI_GPIO_P1_19, BCM2835_GPIO_PUD_DOWN); // MOSI
-	bcm2835_gpio_set_pud(RPI_GPIO_P1_21, BCM2835_GPIO_PUD_DOWN); // MISO
-	bcm2835_gpio_set_pud(RPI_GPIO_P1_24, BCM2835_GPIO_PUD_UP);	 // CS0
-
-	// export spiPRU SPI enable and status bits
 	retval = hal_pin_bit_newf(HAL_IN, &(data->SPIenable),
-							  comp_id, "%s.SPI-enable", prefix);
+			comp_id, "%s.SPI-enable", prefix);
 	if (retval != 0)
 		goto error;
 
 	retval = hal_pin_bit_newf(HAL_IN, &(data->SPIreset),
-							  comp_id, "%s.SPI-reset", prefix);
+			comp_id, "%s.SPI-reset", prefix);
 	if (retval != 0)
 		goto error;
 
 	retval = hal_pin_bit_newf(HAL_OUT, &(data->SPIstatus),
-							  comp_id, "%s.SPI-status", prefix);
+			comp_id, "%s.SPI-status", prefix);
 	if (retval != 0)
 		goto error;
 
-	bcm2835_gpio_fsel(reset_gpio_pin, BCM2835_GPIO_FSEL_OUTP);
-	bcm2835_gpio_fsel(stm32_reset_gpio_pin, BCM2835_GPIO_FSEL_OUTP);
-	bcm2835_gpio_fsel(stm32_boot_gpio_pin, BCM2835_GPIO_FSEL_OUTP);
+if (bcm == true)
+	{
+		bcm2835_gpio_fsel(reset_gpio_pin, BCM2835_GPIO_FSEL_OUTP);
+		bcm2835_gpio_fsel(stm32_reset_gpio_pin, BCM2835_GPIO_FSEL_OUTP);
+		bcm2835_gpio_fsel(stm32_boot_gpio_pin, BCM2835_GPIO_FSEL_OUTP);
 
-	// set/clear GPIOs connected to STM reset and boot0 pins
-	bcm2835_gpio_clr(stm32_boot_gpio_pin);
-	bcm2835_gpio_set(stm32_reset_gpio_pin);
+		// set/clear GPIOs connected to STM reset and boot0 pins
+		bcm2835_gpio_clr(stm32_boot_gpio_pin);
+		bcm2835_gpio_set(stm32_reset_gpio_pin);
 
-   //reset STM32
-   bcm2835_gpio_clr(stm32_reset_gpio_pin);
-   usleep(5000);
-   bcm2835_gpio_set(stm32_reset_gpio_pin);
+		//reset STM32
+		bcm2835_gpio_clr(stm32_reset_gpio_pin);
+		usleep(5000);
+		bcm2835_gpio_set(stm32_reset_gpio_pin);
+
+	}
+	else if (rp1 == true)
+	{
+		gpio_set_fsel(reset_gpio_pin, GPIO_FSEL_OUTPUT);
+		gpio_set_fsel(stm32_reset_gpio_pin, GPIO_FSEL_OUTPUT);
+		gpio_set_fsel(stm32_boot_gpio_pin, GPIO_FSEL_OUTPUT);
+
+		// set/clear GPIOs connected to STM reset and boot0 pins
+		gpio_clear(stm32_boot_gpio_pin);
+		gpio_set(stm32_reset_gpio_pin);
+
+		//reset STM32
+		gpio_clear(stm32_reset_gpio_pin);
+		usleep(5000);
+		gpio_set(stm32_reset_gpio_pin);
+
+	}
 
 	retval = hal_pin_bit_newf(HAL_IN, &(data->PRUreset),
-							  comp_id, "%s.PRU-reset", prefix);
+			comp_id, "%s.PRU-reset", prefix);
 	if (retval != 0)
 		goto error;
 
@@ -374,12 +329,12 @@ int rtapi_app_main(void)
 		*/
 
 		retval = hal_pin_bit_newf(HAL_IN, &(data->stepperEnable[n]),
-								  comp_id, "%s.joint.%01d.enable", prefix, n);
+				comp_id, "%s.joint.%01d.enable", prefix, n);
 		if (retval != 0)
 			goto error;
 
 		retval = hal_pin_float_newf(HAL_IN, &(data->pos_cmd[n]),
-									comp_id, "%s.joint.%01d.pos-cmd", prefix, n);
+				comp_id, "%s.joint.%01d.pos-cmd", prefix, n);
 		if (retval < 0)
 			goto error;
 		*(data->pos_cmd[n]) = 0.0;
@@ -387,56 +342,56 @@ int rtapi_app_main(void)
 		if (data->pos_mode[n] == 0)
 		{
 			retval = hal_pin_float_newf(HAL_IN, &(data->vel_cmd[n]),
-										comp_id, "%s.joint.%01d.vel-cmd", prefix, n);
+					comp_id, "%s.joint.%01d.vel-cmd", prefix, n);
 			if (retval < 0)
 				goto error;
 			*(data->vel_cmd[n]) = 0.0;
 		}
 
 		retval = hal_pin_float_newf(HAL_OUT, &(data->freq_cmd[n]),
-									comp_id, "%s.joint.%01d.freq-cmd", prefix, n);
+				comp_id, "%s.joint.%01d.freq-cmd", prefix, n);
 		if (retval < 0)
 			goto error;
 		*(data->freq_cmd[n]) = 0.0;
 
 		retval = hal_pin_float_newf(HAL_OUT, &(data->pos_fb[n]),
-									comp_id, "%s.joint.%01d.pos-fb", prefix, n);
+				comp_id, "%s.joint.%01d.pos-fb", prefix, n);
 		if (retval < 0)
 			goto error;
 		*(data->pos_fb[n]) = 0.0;
 
 		retval = hal_param_float_newf(HAL_RW, &(data->pos_scale[n]),
-									  comp_id, "%s.joint.%01d.scale", prefix, n);
+				comp_id, "%s.joint.%01d.scale", prefix, n);
 		if (retval < 0)
 			goto error;
 		data->pos_scale[n] = 1.0;
 
 		retval = hal_pin_s32_newf(HAL_OUT, &(data->count[n]),
-								  comp_id, "%s.joint.%01d.counts", prefix, n);
+				comp_id, "%s.joint.%01d.counts", prefix, n);
 		if (retval < 0)
 			goto error;
 		*(data->count[n]) = 0;
 
 		retval = hal_pin_float_newf(HAL_IN, &(data->pgain[n]),
-									comp_id, "%s.joint.%01d.pgain", prefix, n);
+				comp_id, "%s.joint.%01d.pgain", prefix, n);
 		if (retval < 0)
 			goto error;
 		*(data->pgain[n]) = 0.0;
 
 		retval = hal_pin_float_newf(HAL_IN, &(data->ff1gain[n]),
-									comp_id, "%s.joint.%01d.ff1gain", prefix, n);
+				comp_id, "%s.joint.%01d.ff1gain", prefix, n);
 		if (retval < 0)
 			goto error;
 		*(data->ff1gain[n]) = 0.0;
 
 		retval = hal_pin_float_newf(HAL_IN, &(data->deadband[n]),
-									comp_id, "%s.joint.%01d.deadband", prefix, n);
+				comp_id, "%s.joint.%01d.deadband", prefix, n);
 		if (retval < 0)
 			goto error;
 		*(data->deadband[n]) = 0.0;
 
 		retval = hal_param_float_newf(HAL_RW, &(data->maxaccel[n]),
-									  comp_id, "%s.joint.%01d.maxaccel", prefix, n);
+				comp_id, "%s.joint.%01d.maxaccel", prefix, n);
 		if (retval < 0)
 			goto error;
 		data->maxaccel[n] = 1.0;
@@ -450,7 +405,7 @@ int rtapi_app_main(void)
 	//								comp_id, "%s.SP.%01d", prefix, n);
 
       retval = hal_pin_float_newf(HAL_IN, &(data->setPoint[n]),
-									comp_id, "%s.SP.%s", prefix, SETPOINT_NAMES[n]);
+				comp_id, "%s.SP.%s", prefix, SETPOINT_NAMES[n]);
 
 		if (retval < 0)
 			goto error;
@@ -471,7 +426,7 @@ int rtapi_app_main(void)
 		// retval = hal_pin_bit_newf(HAL_IN, &(data->outputs[n]),
 		//						  comp_id, "%s.output.%01d", prefix, n);
 		retval = hal_pin_bit_newf(HAL_IN, &(data->outputs[n]),
-								  comp_id, "%s.output.%s", prefix, OUTPUT_NAMES[n]);
+				comp_id, "%s.output.%s", prefix, OUTPUT_NAMES[n]);
 		if (retval != 0)
 			goto error;
 		*(data->outputs[n]) = 0;
@@ -482,7 +437,7 @@ int rtapi_app_main(void)
 		//		retval = hal_pin_bit_newf(HAL_OUT, &(data->inputs[n]),
 		//								  comp_id, "%s.input.%01d", prefix, n);
 		retval = hal_pin_bit_newf(HAL_OUT, &(data->inputs[n]),
-								  comp_id, "%s.input.%s", prefix, INPUT_NAMES[n]);
+				comp_id, "%s.input.%s", prefix, INPUT_NAMES[n]);
 		if (retval != 0)
 			goto error;
 		*(data->inputs[n]) = 0;
@@ -517,7 +472,7 @@ error:
 	if (retval < 0)
 	{
 		rtapi_print_msg(RTAPI_MSG_ERR,
-						"%s: ERROR: update function export failed\n", modname);
+				"%s: ERROR: update function export failed\n", modname);
 		hal_exit(comp_id);
 		return -1;
 	}
@@ -528,7 +483,7 @@ error:
 	if (retval < 0)
 	{
 		rtapi_print_msg(RTAPI_MSG_ERR,
-						"%s: ERROR: write function export failed\n", modname);
+				"%s: ERROR: write function export failed\n", modname);
 		hal_exit(comp_id);
 		return -1;
 	}
@@ -538,7 +493,7 @@ error:
 	if (retval < 0)
 	{
 		rtapi_print_msg(RTAPI_MSG_ERR,
-						"%s: ERROR: read function export failed\n", modname);
+				"%s: ERROR: read function export failed\n", modname);
 		hal_exit(comp_id);
 		return -1;
 	}
@@ -557,6 +512,130 @@ void rtapi_app_exit(void)
  *                   LOCAL FUNCTION DEFINITIONS                         *
  ************************************************************************/
 
+int rt_peripheral_init(void)
+{
+	int  memfd;
+    FILE *fp;
+
+	// assume were only running on >RPi3
+
+    if ((fp = fopen("/proc/device-tree/soc/ranges" , "rb")))
+    {
+        unsigned char buf[16];
+		uint32_t base_address;
+        uint32_t peri_size;
+        if (fread(buf, 1, sizeof(buf), fp) >= 8)
+        {
+            base_address = (buf[4] << 24) |
+              (buf[5] << 16) |
+              (buf[6] << 8) |
+              (buf[7] << 0);
+
+            peri_size = (buf[8] << 24) |
+              (buf[9] << 16) |
+              (buf[10] << 8) |
+              (buf[11] << 0);
+
+            if (!base_address)
+            {
+                /* looks like RPI 4 or 5 */
+                base_address = (buf[8] << 24) |
+                      (buf[9] << 16) |
+                      (buf[10] << 8) |
+                      (buf[11] << 0);
+
+                peri_size = (buf[12] << 24) |
+                (buf[13] << 16) |
+                (buf[14] << 8) |
+                (buf[15] << 0);
+            }
+
+			//rtapi_print_msg(RTAPI_MSG_ERR,"\nRPi peripheral: Base address 0x%08x size 0x%08x\n", base_address, peri_size);
+        }
+
+		if (base_address == BCM2835_RPI2_PERI_BASE)
+		{
+			//rtapi_print_msg(RTAPI_MSG_ERR, "Raspberry Pi 3, using BCM2835 driver\n\n");
+			bcm = true;
+		}
+		else if (base_address == BCM2835_RPI4_PERI_BASE)
+		{
+			//rtapi_print_msg(RTAPI_MSG_ERR, "Raspberry Pi 4, using BCM2835 driver\n\n");
+			bcm = true;
+		}
+		else if (peri_size == RPI5_RP1_PERI_BASE)
+		{
+			// on the RPi 5, the base address is in the location of the peripheral size
+			//rtapi_print_msg(RTAPI_MSG_ERR, "Raspberry Pi 5, using RP1 driver\n\n");
+			rp1 = true;
+		}
+		else
+		{
+			rtapi_print_msg(RTAPI_MSG_ERR, "Error, RPi not detected\n");
+			return -1;
+		}
+
+		fclose(fp);
+	}
+
+	if (bcm == true)
+	{
+		// Map the RPi BCM2835 peripherals - uses "rtapi_open_as_root" in place of "open"
+		if (!rt_bcm2835_init())
+		{
+		  rtapi_print_msg(RTAPI_MSG_ERR,"rt_bcm2835_init failed. Are you running with root privlages??\n");
+		  return -1;
+		}
+
+		// Set the SPI0 pins to the Alt 0 function to enable SPI0 access, setup CS register
+		// and clear TX and RX fifos
+		if (!bcm2835_spi_begin())
+		{
+		  rtapi_print_msg(RTAPI_MSG_ERR,"bcm2835_spi_begin failed. Are you running with root privlages??\n");
+		  return -1;
+		}
+
+		// Configure SPI0
+		bcm2835_spi_setBitOrder(BCM2835_SPI_BIT_ORDER_MSBFIRST);      // The default
+		bcm2835_spi_setDataMode(BCM2835_SPI_MODE0);                   // The default
+
+		//bcm2835_spi_setClockDivider(BCM2835_SPI_CLOCK_DIVIDER_128);		// 3.125MHz on RPI3
+		bcm2835_spi_setClockDivider(BCM2835_SPI_CLOCK_DIVIDER_64);		// 6.250MHz on RPI3
+		//bcm2835_spi_setClockDivider(BCM2835_SPI_CLOCK_DIVIDER_32);		// 12.5MHz on RPI3
+
+		bcm2835_spi_chipSelect(BCM2835_SPI_CS0);                      // The default
+		bcm2835_spi_setChipSelectPolarity(BCM2835_SPI_CS0, LOW);      // the default
+
+
+		/* RPI_GPIO_P1_19        = 10 		MOSI when SPI0 in use
+		 * RPI_GPIO_P1_21        =  9 		MISO when SPI0 in use
+		 * RPI_GPIO_P1_23        = 11 		CLK when SPI0 in use
+		 * RPI_GPIO_P1_24        =  8 		CE0 when SPI0 in use
+		 * RPI_GPIO_P1_26        =  7 		CE1 when SPI0 in use
+		 */
+
+		// Configure pullups on SPI0 pins - source termination and CS high (does this allows for higher clock frequencies??? wiring is more important here)
+		bcm2835_gpio_set_pud(RPI_GPIO_P1_19, BCM2835_GPIO_PUD_DOWN);	// MOSI
+		bcm2835_gpio_set_pud(RPI_GPIO_P1_21, BCM2835_GPIO_PUD_DOWN);	// MISO
+		bcm2835_gpio_set_pud(RPI_GPIO_P1_24, BCM2835_GPIO_PUD_UP);		// CS0
+	}
+	else if (rp1 == true)
+	{
+		if (!rt_rp1lib_init())
+		{
+			rtapi_print_msg(RTAPI_MSG_ERR,"rt_rp1_init failed.\n");
+			return -1;
+		}
+
+		// TODO: Allow user to select SPI number, CS number and frequency
+		rp1spi_init(0, 0, SPI_MODE_0, 10000000);  // SPIx, CSx, mode, freq
+	}
+	else
+	{
+		return -1;
+	}
+
+}
 // This is the same as the standard bcm2835 library except for the use of
 // "rtapi_open_as_root" in place of "open"
 
@@ -706,6 +785,44 @@ exit:
 	return ok;
 }
 
+int rt_rp1lib_init(void)
+{
+    uint64_t phys_addr = RP1_BAR1;
+
+    DEBUG_PRINT("Initialising RP1 library: %s\n", __func__);
+
+    // rp1_chip is declared in gpiochip_rp1.c
+    chip = &rp1_chip;
+
+    inst = rp1_create_instance(chip, phys_addr, NULL);
+    if (!inst)
+        return -1;
+
+    inst->phys_addr = phys_addr;
+
+    // map memory
+    inst->mem_fd = rtapi_open_as_root("/dev/mem", O_RDWR | O_SYNC);
+    if (inst->mem_fd < 0)
+        return errno;
+
+    inst->priv = mmap(
+        NULL,
+        RP1_BAR1_LEN,
+        PROT_READ | PROT_WRITE,
+        MAP_SHARED,
+        inst->mem_fd,
+        inst->phys_addr
+        );
+
+    DEBUG_PRINT("Base address: %11lx, size: %lx, mapped at address: %p\n", inst->phys_addr, RP1_BAR1_LEN, inst->priv);
+
+    if (inst->priv == MAP_FAILED)
+        return errno;
+
+    return 1;
+}
+
+
 void update_freq(void *arg, long period)
 {
 	int i;
@@ -800,6 +917,8 @@ void update_freq(void *arg, long period)
 
 		/* at this point, all scaling, limits, and other parameter
 		changes have been handled - time for the main control */
+
+
 
 		if (data->pos_mode[i])
 		{
@@ -926,11 +1045,25 @@ void spi_read()
 	// update the PRUreset output
 	if (*(data->PRUreset))
 	{
-		bcm2835_gpio_set(reset_gpio_pin);
+		if (bcm == true)
+		{
+			bcm2835_gpio_set(reset_gpio_pin);
+		}
+		else if (rp1 == true)
+		{
+			gpio_set(reset_gpio_pin);
+		}
 	}
 	else
 	{
-		bcm2835_gpio_clr(reset_gpio_pin);
+		if (bcm == true)
+		{
+			bcm2835_gpio_clr(reset_gpio_pin);
+		}
+		else if (rp1 == true)
+		{
+			gpio_clear(reset_gpio_pin);
+		}
 	}
 
 	if (*(data->SPIenable))
@@ -1062,16 +1195,13 @@ void spi_transfer()
 {
 	// send and receive data to and from the Remora PRU concurrently
 
-	if (chip == LPC)
-	{
-		for (int i = 0; i < SPIBUFSIZE; i++)
-		{
-			rxData.rxBuffer[i] = bcm2835_spi_transfer(txData.txBuffer[i]);
-		}
-	}
-	else if (chip == STM)
+	if (bcm == true)
 	{
 		bcm2835_spi_transfernb(txData.txBuffer, rxData.rxBuffer, SPIBUFSIZE);
+	}
+	else if (rp1 == true)
+	{
+		rp1spi_transfer(0, txData.txBuffer, rxData.rxBuffer, SPIBUFSIZE);
 	}
 }
 
