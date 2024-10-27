@@ -5,7 +5,7 @@
 	loadrt [EMCMOT]EMCMOT base_period_nsec=[EMCMOT]BASE_PERIOD servo_period_nsec=[EMCMOT]SERVO_PERIOD num_joints=[KINS]JOINTS
 
 	loadrt flexi PRU_base_freq=120000
-	loadrt not names=stepen_not,stepen_z_not,probe_basic_time_not
+	loadrt not names=stepen_not,stepen_z_not
 	loadrt estop_latch names=estop_latch
 	loadrt and2 names=run_and,step_and
 	loadrt toggle names=hold_button_toggle
