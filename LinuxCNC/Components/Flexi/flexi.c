@@ -634,7 +634,7 @@ int rt_peripheral_init(void)
 		}
 
 		// TODO: Allow user to select SPI number, CS number and frequency
-		rp1spi_init(0, 0, SPI_MODE_0, 15000000);  // SPIx, CSx, mode, freq. Clock frequency here is different than Pi4, this will get rounded to nearest clock divider. TODO Figure out exact value that works best with Flexi.
+		rp1spi_init(0, 0, SPI_MODE_0, 20000000);  // SPIx, CSx, mode, freq. Clock frequency here is different than Pi4, this will get rounded to nearest clock divider. TODO Figure out exact value that works best with Flexi.
 	}
 	else
 	{
