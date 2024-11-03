@@ -31,24 +31,31 @@
 #toggle2nist states & mux selectors
 	net program-is-paused hold_toggle.is-on <= halui.program.is-paused
 
-# vfdmod - uncomment the below if using vfdmod (default). There are also a couple items to edit in spindle_load.hal
-	loadusr -W vfdmod vfdmod.ini # Configured for Durapulse GS10
-	# loadusr -W vfdmod vfdmod_h100-v70.ini # Configured for H100 (H100-XXX-XX) or Stepper Online V70 (V70-XXX) VFDs
+# vfdmod - uncomment the below if using vfdmod (default). QTdragon_hd requires spindle feedback in RPS rather than RPM, we will scale it here rather than have vfdmod return rps for flexibility with differnt UIs.
+	loadusr -W vfdmod vfdmod.ini # Configured for Durapulse GS10. Use vfdmod_h100-v70.ini for H100 (H100-XXX-XX) or Stepper Online V70 (V70-XXX) VFDs.
+	loadrt scale names=spindle_fb_scale
+	addf spindle_fb_scale servo-thread
+	setp spindle_fb_scale.gain 0.016666667 # 1/60 to convert rpm to rps
 	net spindle-speed-cmd vfdmod.spindle.rpm-in <= spindle.0.speed-out
-	net spindle-speed-fb vfdmod.spindle.rpm-out => spindle.0.speed-in
+	net spindle-fb-scale-in vfdmod.spindle.rpm-out => spindle_fb_scale.in
+	net spindle-speed-fb spindle_fb_scale.out => spindle.0.speed-in
 	net spindle-at-speed vfdmod.spindle.at-speed => spindle.0.at-speed
 	net spindle-forward vfdmod.control.run-forward => spindle.0.forward
 	net spindle-reverse vfdmod.control.run-reverse => spindle.0.reverse
 
 # hy_vfd - uncomment the below if using hy_vfd. Use /dev/ttyAMA1 for Pi 4 and /dev/ttyAMA2 for Pi 5
-	#loadusr -Wn vfd hy_vfd -n vfd -d /dev/ttyAMA1 -p none -S24000 -r 9600 -s 1
+	#loadusr -Wn vfd hy_vfd -n vfd -d /dev/ttyAMA2 -p none -S24000 -r 9600 -s 1
+	#loadrt scale names=spindle_fb_scale
+	#addf spindle_fb_scale servo-thread
+	#setp spindle_fb_scale.gain 0.016666667 # 1/60  to convert rpm to rps
 	#setp vfd.enable 1
 	#net spindle-speed-cmd vfd.speed-command <= spindle.0.speed-out
-	#net spindle-speed-fb vfd.spindle-speed-fb <= spindle.0.speed-in
-	#net spindle-at-speed vfd.spindle-at-speed <= spindle.0.at-speed
-	#net spindle-forward vfd.spindle-forward <= spindle.0.forward
-	#net spindle-reverse vfd.spindle-reverse <= spindle.0.reverse
-	#net spindle-on vfd.spindle-on <= spindle.0.on
+	#net spindle-fb-scale-in vfd.spindle-speed-fb => spindle_fb_scale.in
+	#net spindle-speed-fb spindle_fb_scale.out => spindle.0.speed-in
+	#net spindle-at-speed vfd.spindle-at-speed => spindle.0.at-speed
+	#net spindle-forward vfd.spindle-forward => spindle.0.forward
+	#net spindle-reverse vfd.spindle-reverse => spindle.0.reverse
+	#net spindle-on vfd.spindle-on => spindle.0.on
 	#net spindle-comm-ok <= vfd.hycomm-ok
 	
 # Analog spindle control - Uncomment if using PWM or analog. You will also need to comment out spindle_load.hal in postgui_call_list.hal.
