@@ -918,28 +918,23 @@ void update_freq(void *arg, long period)
 			// calcuate the error
 			error = command - feedback;
 
-			// apply the deadband
-			if (error > deadband)
+			// if outside of error deadband, calculate vel_cmd values, else zero error and do nothing.
+			if (fabs(error) > fabs(deadband))
 			{
-				error -= deadband;
-			}
-			else if (error < -deadband)
-			{
-				error += deadband;
+				// calculate command and derivatives
+				data->cmd_d[i] = (command - data->prev_cmd[i]) * periodrecip;
+
+				// save old values
+				data->prev_cmd[i] = command;
+
+				// calculate the output value
+				vel_cmd = pgain * error + data->cmd_d[i] * ff1gain;
 			}
 			else
 			{
-				error = 0;
+				error = 0; //this doesn't actually do anything now because we're not bothering to calculate vel_cmd in deadband.. But leaving here for now for readability.
+				vel_cmd = 0;
 			}
-
-			// calcuate command and derivatives
-			data->cmd_d[i] = (command - data->prev_cmd[i]) * periodrecip;
-
-			// save old values
-			data->prev_cmd[i] = command;
-
-			// calculate the output value
-			vel_cmd = pgain * error + data->cmd_d[i] * ff1gain;
 		}
 		else
 		{
