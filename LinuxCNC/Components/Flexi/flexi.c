@@ -77,8 +77,8 @@ typedef struct
 	hal_float_t *pgain[JOINTS];
 	hal_float_t *ff1gain[JOINTS];
 	hal_float_t *deadband[JOINTS];
-	float old_pos_cmd[JOINTS];	   // previous position command (counts)
-	float old_pos_cmd_raw[JOINTS]; // previous position command (counts)
+	//float old_pos_cmd[JOINTS];	   // previous position command (counts)
+	//float old_pos_cmd_raw[JOINTS]; // previous position command (counts)
 	float old_scale[JOINTS];	   // stored scale value
 	float scale_recip[JOINTS];	   // reciprocal value used for scaling
 	float prev_cmd[JOINTS];
@@ -146,7 +146,9 @@ static double dt;		 // update_freq period in seconds  - (THIS IS RUNNING IN THE 
 static double recip_dt;	 // recprocal of period, avoids divides
 
 static int64_t accum[JOINTS] = {0};
+static int32_t count[JOINTS] = { 0 };
 static int32_t old_count[JOINTS] = {0};
+static int8_t  filter_count[JOINTS] = { 0 };
 static int32_t accum_diff = 0;
 
 static int reset_gpio_pin = 25; // RPI GPIO pin number used to force watchdog reset of the PRU
@@ -250,7 +252,6 @@ int rtapi_app_main(void)
 	}
 
 	// export remoraPRU SPI enable and status bits
-
 	retval = hal_pin_bit_newf(HAL_IN, &(data->SPIenable),
 			comp_id, "%s.SPI-enable", prefix);
 	if (retval != 0)
@@ -1045,6 +1046,10 @@ void spi_read()
 	int i;
 	double curr_pos;
 
+		// following error spike filter pramaters
+	int n = 2;
+	int M = 250;
+
 	// Data header
 	txData.header = PRU_READ;
 
@@ -1089,7 +1094,9 @@ void spi_read()
 
 				for (i = 0; i < JOINTS; i++)
 				{
-					// the PRU DDS accumulator uses 32 bit counter, this code converts that counter into 64 bits */
+					
+					// the PRU DDS accumulator uses 32 bit counter, this code converts that counter into 64 bits
+					/*
 					accum_diff = rxData.jointFeedback[i] - old_count[i];
 					old_count[i] = rxData.jointFeedback[i];
 					accum[i] += accum_diff;
@@ -1099,6 +1106,30 @@ void spi_read()
 					data->scale_recip[i] = (1.0 / STEP_MASK) / data->pos_scale[i];
 					curr_pos = (double)(accum[i] - STEP_OFFSET) * (1.0 / STEP_MASK);
 					*(data->pos_fb[i]) = (float)((curr_pos + 0.5) / data->pos_scale[i]);
+					rtapi_print("joint:[%d] accum_diff:[%d] abs accum_diff:[%d] M limit:[%d] accum_diff >> STEPBIT:[%d] OldCount:[%d] Count:[%d] \n", i, accum_diff, abs(accum_diff), M ,accum_diff >> STEPBIT, old_count[i], count[i]);
+					*/
+					old_count[i] = count[i];
+					count[i] = rxData.jointFeedback[i];
+					accum_diff = count[i] - old_count[i];
+
+					// spike filter
+					if (abs(count[i] - old_count[i]) > M && filter_count[i] < n)
+					{
+						// recent big change: hold previous value
+						++filter_count[i];
+						count[i] = old_count[i];
+						rtapi_print("Spike filter active[%d][%d]: %d\n", i, filter_count[i], accum_diff);
+					}
+					else
+					{
+						// normal operation, or else the big change must be real after all
+						filter_count[i] = 0;
+					}
+
+					*(data->count[i]) = count[i];
+					*(data->pos_fb[i]) = (float)(count[i]) / data->pos_scale[i];
+					//rtapi_print("joint:[%d] OldCount:[%d] Count:[%d] pos_fb:[%f] \n", i, old_count[i], count[i], data->pos_fb[i]);
+
 				}
 
 				// Feedback
