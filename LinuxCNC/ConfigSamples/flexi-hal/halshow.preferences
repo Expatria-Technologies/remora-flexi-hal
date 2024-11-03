@@ -1,0 +1,23 @@
+# Halshow settings
+# This file is generated automatically.
+wm geometry . 1065x651+358+156
+placeFrames 0.3
+set ::ratio 0.3
+set ::old_w_leftf 160
+set ::watchlist {
+    pin+qtdragon.spindle-is-at-speed
+    pin+qtdragon.spindle-modbus-connection
+    pin+qtdragon.spindle-modbus-errors
+    pin+vfdmod.spindle.at-speed
+    pin+spindle.0.at-speed
+    pin+spindle.0.speed-in
+    pin+spindle.0.speed-out
+    sig+spindle-speed-fb
+}
+set ::workmode showhal
+set ::watchInterval 100
+set ::col1_width 100
+set ::ffmts 
+set ::ifmts 
+set ::alwaysOnTop 0
+set ::autoSaveWatchlist 1

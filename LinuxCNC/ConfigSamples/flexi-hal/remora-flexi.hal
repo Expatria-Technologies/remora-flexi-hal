@@ -35,10 +35,10 @@
 	loadusr -W vfdmod vfdmod.ini # Configured for Durapulse GS10
 	# loadusr -W vfdmod vfdmod_h100-v70.ini # Configured for H100 (H100-XXX-XX) or Stepper Online V70 (V70-XXX) VFDs
 	net spindle-speed-cmd vfdmod.spindle.rpm-in <= spindle.0.speed-out
-	net spindle-speed-fb vfdmod.spindle.rpm-out <= spindle.0.speed-in
-	net spindle-at-speed vfdmod.spindle.at-speed <= spindle.0.at-speed
-	net spindle-forward vfdmod.control.run-forward <= spindle.0.forward
-	net spindle-reverse vfdmod.control.run-reverse <= spindle.0.reverse
+	net spindle-speed-fb vfdmod.spindle.rpm-out => spindle.0.speed-in
+	net spindle-at-speed vfdmod.spindle.at-speed => spindle.0.at-speed
+	net spindle-forward vfdmod.control.run-forward => spindle.0.forward
+	net spindle-reverse vfdmod.control.run-reverse => spindle.0.reverse
 
 # hy_vfd - uncomment the below if using hy_vfd. Use /dev/ttyAMA1 for Pi 4 and /dev/ttyAMA2 for Pi 5
 	#loadusr -Wn vfd hy_vfd -n vfd -d /dev/ttyAMA1 -p none -S24000 -r 9600 -s 1
@@ -177,15 +177,20 @@
 
 
 # Probe
-	net probe motion.probe-input <= flexi.input.PROBE
+	net probe_input motion.probe-input <= flexi.input.PROBE
 
 # Manual toolchange
 
-	loadusr -W hal_manualtoolchange
-	net tool-change iocontrol.0.tool-change => hal_manualtoolchange.change
-	net tool-changed iocontrol.0.tool-changed <= hal_manualtoolchange.changed
-	net tool-number iocontrol.0.tool-prep-number => hal_manualtoolchange.number
+	#These are for axis, uncomment these and remove qtdragon_toolchange from postgui_call_list.hal if using axis GUI.
+	#loadusr -W hal_manualtoolchange
+	#net tool-change iocontrol.0.tool-change => hal_manualtoolchange.change
+	#net tool-changed iocontrol.0.tool-changed <= hal_manualtoolchange.changed
+	#net tool-number iocontrol.0.tool-prep-number => hal_manualtoolchange.number
+	#net tool-prepare-loopback iocontrol.0.tool-prepare => iocontrol.0.tool-prepared
+	
+	#This is forqtdradon_hd, comment out of using axis.
 	net tool-prepare-loopback iocontrol.0.tool-prepare => iocontrol.0.tool-prepared
+
 
 
 	
