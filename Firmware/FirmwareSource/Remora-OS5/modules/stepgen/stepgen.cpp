@@ -42,10 +42,12 @@ Stepgen::Stepgen(int32_t threadFreq, int jointNumber, std::string step, std::str
 	this->stepPin = new Pin(this->step, OUTPUT);
 	this->directionPin = new Pin(this->direction, OUTPUT);
 	this->DDSaccumulator = 0;
+    this->rawCount = 0;
 	this->frequencyScale = (float)(1 << this->stepBit) / (float)threadFreq;
 	this->mask = 1 << this->jointNumber;
 	this->isEnabled = false;
 	this->isForward = false;
+    this->lastDir = !this->isForward;
 }
 
 
@@ -79,7 +81,7 @@ void Stepgen::makePulses()
 		this->DDSaccumulator += this->DDSaddValue;           	  				// Update the DDS accumulator with the new add value
 		stepNow ^= this->DDSaccumulator;                          				// Test for changes in the low half of the DDS accumulator
 		stepNow &= (1L << this->stepBit);                         				// Check for the step bit
-		this->rawCount = this->DDSaccumulator >> this->stepBit;   				// Update the position raw count
+		//this->rawCount = this->DDSaccumulator >> this->stepBit;   				// Update the position raw count
 
 		if (this->DDSaddValue > 0)												// The sign of the DDS add value indicates the desired direction
 		{
@@ -98,18 +100,25 @@ void Stepgen::makePulses()
         }
 		else if (stepNow)
 		{
-			this->stepPin->set(true);										// Raise step pin
+			/*
+            this->stepPin->set(true);										// Raise step pin
 			*(this->ptrFeedback) = this->DDSaccumulator;                     // Update position feedback via pointer to the data receiver
 			this->isStepping = true;
-		}
+            */
 
-        /*if (stepNow)
-		{
-			this->directionPin->set(this->isForward);             		// Set direction pin
-			this->stepPin->set(true);										// Raise step pin - A4988 / DRV8825 stepper drivers only need 200ns setup time
-			*(this->ptrFeedback) = this->DDSaccumulator;                     // Update position feedback via pointer to the data receiver
+            this->stepPin->set(true);										// Raise step pin - A4988 / DRV8825 stepper drivers only need 200ns setup time
+            if (this->isForward)
+            {
+                this->rawCount++;
+            }
+            else
+            {
+                this->rawCount--;
+            }
+            *(this->ptrFeedback) = this->rawCount;							// Update position feedback via pointer to the data receiver
 			this->isStepping = true;
-		}*/
+
+		}
 	}
 
 
