@@ -77,8 +77,6 @@ typedef struct
 	hal_float_t *pgain[JOINTS];
 	hal_float_t *ff1gain[JOINTS];
 	hal_float_t *deadband[JOINTS];
-	//float old_pos_cmd[JOINTS];	   // previous position command (counts)
-	//float old_pos_cmd_raw[JOINTS]; // previous position command (counts)
 	float old_scale[JOINTS];	   // stored scale value
 	float scale_recip[JOINTS];	   // reciprocal value used for scaling
 	float prev_cmd[JOINTS];
@@ -138,8 +136,8 @@ static rxData_t rxData;
 static int comp_id; // component ID
 static const char *modname = MODNAME;
 static const char *prefix = PREFIX;
-static bool			bcm;					// use BCM2835 driver
-static bool			rp1;					// use RP1 driver
+static bool	bcm;					// use BCM2835 driver
+static bool	rp1;					// use RP1 driver
 static int num_chan = 0; // number of step generators configured
 static long old_dtns;	 // update_freq function period in nsec - (THIS IS RUNNING IN THE PI)
 static double dt;		 // update_freq period in seconds  - (THIS IS RUNNING IN THE PI)
@@ -152,7 +150,6 @@ static int8_t  filter_count[JOINTS] = { 0 };
 static int32_t accum_diff = 0;
 
 static int reset_gpio_pin = 25; // RPI GPIO pin number used to force watchdog reset of the PRU
-//static int reset_gpio_pin = 24; // RPI GPIO pin number used to force watchdog reset of the PRU
 static int stm32_reset_gpio_pin = 17;
 static int stm32_boot_gpio_pin = 7;
 
@@ -305,29 +302,10 @@ if (bcm == true)
 	if (retval != 0)
 		goto error;
 
-	// export all the variables for each joint
+	// export all the variables for each joint and pin
 	for (n = 0; n < JOINTS; n++)
 	{
-		// export pins
-
 		data->pos_mode[n] = (parse_ctrl_type(ctrl_type[n]) == POSITION);
-		/*
-		This is throwing errors from axis.py for some reason...
-
-				if (data->pos_mode[n]){
-					rtapi_print_msg(RTAPI_MSG_ERR, "Creating pos_mode[%d] = %d\n", n, data->pos_mode[n]);
-					retval = hal_pin_float_newf(HAL_IN, &(data->pos_cmd[n]),
-							comp_id, "%s.joint.%01d.pos-cmd", prefix, n);
-					if (retval < 0) goto error;
-					*(data->pos_cmd[n]) = 0.0;
-				} else {
-					rtapi_print_msg(RTAPI_MSG_ERR, "Creating vel_mode[%d] = %d\n", n, data->pos_mode[n]);
-					retval = hal_pin_float_newf(HAL_IN, &(data->vel_cmd[n]),
-							comp_id, "%s.joint.%01d.vel-cmd", prefix, n);
-					if (retval < 0) goto error;
-					*(data->vel_cmd[n]) = 0.0;
-				}
-		*/
 
 		retval = hal_pin_bit_newf(HAL_IN, &(data->stepperEnable[n]),
 				comp_id, "%s.joint.%01d.enable", prefix, n);
@@ -400,22 +378,14 @@ if (bcm == true)
 
 	for (n = 0; n < VARIABLES; n++)
 	{
-		// export pins
-
-	//	retval = hal_pin_float_newf(HAL_IN, &(data->setPoint[n]),
-	//								comp_id, "%s.SP.%01d", prefix, n);
-
-      retval = hal_pin_float_newf(HAL_IN, &(data->setPoint[n]),
+		retval = hal_pin_float_newf(HAL_IN, &(data->setPoint[n]),
 				comp_id, "%s.SP.%s", prefix, SETPOINT_NAMES[n]);
 
 		if (retval < 0)
 			goto error;
 		*(data->setPoint[n]) = 0.0;
 
-	//	retval = hal_pin_float_newf(HAL_OUT, &(data->processVariable[n]),
-	//								comp_id, "%s.PV.%01d", prefix, n);
-
-      retval = hal_pin_float_newf(HAL_OUT, &(data->processVariable[n]),
+		retval = hal_pin_float_newf(HAL_OUT, &(data->processVariable[n]),
 									comp_id, "%s.PV.%s", prefix, PV_NAMES[n]);
 		if (retval < 0)
 			goto error;
@@ -424,8 +394,6 @@ if (bcm == true)
 
 	for (n = 0; n < DIGITAL_OUTPUTS; n++)
 	{
-		// retval = hal_pin_bit_newf(HAL_IN, &(data->outputs[n]),
-		//						  comp_id, "%s.output.%01d", prefix, n);
 		retval = hal_pin_bit_newf(HAL_IN, &(data->outputs[n]),
 				comp_id, "%s.output.%s", prefix, OUTPUT_NAMES[n]);
 		if (retval != 0)
@@ -435,15 +403,13 @@ if (bcm == true)
 
 	for (n = 0; n < DIGITAL_INPUTS; n++)
 	{
-		//		retval = hal_pin_bit_newf(HAL_OUT, &(data->inputs[n]),
-		//								  comp_id, "%s.input.%01d", prefix, n);
 		retval = hal_pin_bit_newf(HAL_OUT, &(data->inputs[n]),
 								  comp_id, "%s.input.%s", prefix, INPUT_NAMES[n]);
 		if (retval != 0)
 			goto error;
 		*(data->inputs[n]) = 0;
 
-      retval = hal_pin_bit_newf(HAL_OUT, &(data->inputs[n + DIGITAL_INPUTS]), //inverted 'not' pins offset by the number of inputs we have. 
+		retval = hal_pin_bit_newf(HAL_OUT, &(data->inputs[n + DIGITAL_INPUTS]), //inverted 'not' pins offset by the number of inputs we have.
 								  comp_id, "%s.input.%s.not", prefix, INPUT_NAMES[n]);
 		if (retval != 0)
 			goto error;
@@ -460,19 +426,6 @@ error:
 		return -1;
 	}
 
-	// int hal_pin_bit_new(const char *name, hal_pin_dir_t dir, hal_bit_t ** data_ptr_addr, int comp_id)
-	// int hal_pin_bit_newf(hal_pin_dir_t dir, hal_bit_t ** data_ptr_addr, int comp_id, const char *fmt, ...)
-	/*
-		hal_pin_bit_new("X_Limit", HAL_OUT, &(data->inputs[0], comp_id);
-		hal_pin_bit_new("A_Limit", HAL_OUT, &(data->inputs[1], comp_id);
-		hal_pin_bit_new("Probe", HAL_OUT, &(data->inputs[2], comp_id);
-		hal_pin_bit_new("Y_Limit", HAL_OUT, &(data->inputs[3], comp_id);
-		hal_pin_bit_new("KPSTR", HAL_OUT, &(data->inputs[4], comp_id);
-		hal_pin_bit_new("Door", HAL_OUT, &(data->inputs[5], comp_id);
-		hal_pin_bit_new("Halt", HAL_OUT, &(data->inputs[6], comp_id);
-		hal_pin_bit_new("Feed_Hold", HAL_OUT, &(data->inputs[7], comp_id);
-		hal_pin_bit_new("Cycle_Start", HAL_OUT, &(data->inputs[8], comp_id);
-	*/
 	// Export functions
 	rtapi_snprintf(name, sizeof(name), "%s.update-freq", prefix);
 	retval = hal_export_funct(name, update_freq, data, 1, 0, comp_id);
@@ -869,10 +822,7 @@ void update_freq(void *arg, long period)
 		}
 
 		// calculate frequency limit
-		// max_freq = PRU_BASEFREQ/(4.0); 			//limit of DDS running at 80kHz
-		// max_freq = PRU_BASEFREQ/(2.0);
-		//max_freq = PRU_base_freq / (2.0);
-      max_freq = PRU_base_freq; // step pulses now happen in a single base thread interval
+		max_freq = PRU_base_freq; // step pulses now happen in a single base thread interval, we do not need to divide.
 
 		// check for user specified frequency limit parameter
 		if (data->maxvel[i] <= 0.0)
@@ -1046,9 +996,9 @@ void spi_read()
 	int i;
 	double curr_pos;
 
-		// following error spike filter pramaters
-	int n = 2;
-	int M = 250;
+	// Feedback spike filter pramaters
+	int n = 2; //number of periods
+	int M = 250; //magnitude of spike in period
 
 	// Data header
 	txData.header = PRU_READ;
@@ -1096,18 +1046,6 @@ void spi_read()
 				{
 					
 					// the PRU DDS accumulator uses 32 bit counter, this code converts that counter into 64 bits
-					/*
-					accum_diff = rxData.jointFeedback[i] - old_count[i];
-					old_count[i] = rxData.jointFeedback[i];
-					accum[i] += accum_diff;
-
-					*(data->count[i]) = accum[i] >> STEPBIT;
-
-					data->scale_recip[i] = (1.0 / STEP_MASK) / data->pos_scale[i];
-					curr_pos = (double)(accum[i] - STEP_OFFSET) * (1.0 / STEP_MASK);
-					*(data->pos_fb[i]) = (float)((curr_pos + 0.5) / data->pos_scale[i]);
-					rtapi_print("joint:[%d] accum_diff:[%d] abs accum_diff:[%d] M limit:[%d] accum_diff >> STEPBIT:[%d] OldCount:[%d] Count:[%d] \n", i, accum_diff, abs(accum_diff), M ,accum_diff >> STEPBIT, old_count[i], count[i]);
-					*/
 					old_count[i] = count[i];
 					count[i] = rxData.jointFeedback[i];
 					accum_diff = count[i] - old_count[i];
@@ -1128,11 +1066,9 @@ void spi_read()
 
 					*(data->count[i]) = count[i];
 					*(data->pos_fb[i]) = (float)(count[i]) / data->pos_scale[i];
-					//rtapi_print("joint:[%d] OldCount:[%d] Count:[%d] pos_fb:[%f] \n", i, old_count[i], count[i], data->pos_fb[i]);
-
 				}
 
-				// Feedback
+				// PV Feedback
 				for (i = 0; i < VARIABLES; i++)
 				{
 					*(data->processVariable[i]) = rxData.processVariable[i];
@@ -1162,11 +1098,7 @@ void spi_read()
 			default:
 				// we have received a BAD payload from the PRU
 				*(data->SPIstatus) = 0;
-
 				rtapi_print("Bad SPI payload = %x\n", rxData.header);
-				//	for (i = 0; i < SPIBUFSIZE; i++) {
-				//		rtapi_print("%x\n",rxData.rxBuffer[i]);
-				//	}
 				break;
 			}
 		}
