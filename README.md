@@ -17,6 +17,7 @@ Firmware must be built with Mbed Studio with the 'FLEXIHAL' target, and the 'Rel
 
 <details open>
   <summary>2024-11-08</summary>
+  
   * The default UI has been migrated from probe_basic to qtdragon_hd. 
   * Inverted 'not' pins have been added to the digital inputs to simplify HAL configuration. The format is '[InputName].not'. They are visible in halshow for setup/debugging your configuration.
   * Pi 5 support has been added to the Flexi component via [rp1lib](https://github.com/scottalford75/rp1lib)
