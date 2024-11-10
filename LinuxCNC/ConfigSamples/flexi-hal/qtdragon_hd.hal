@@ -13,10 +13,10 @@
 	
 # Spindle feedback from vfdmod
 	
-	#net spindle-current			qtdragon.spindle-amps				<=	vfdmod.parameters.vfd-output-current
-	#net spindle-voltage			qtdragon.spindle-volts				<=	vfdmod.parameters.vfd-output-voltage
-	#net spindle-conencted		qtdragon.spindle-modbus-connection	<=	vfdmod.rs485.is-connected
-	#net spindle-comm-err		qtdragon.spindle-modbus-errors		<=	vfdmod.rs485.error-count
+	net spindle-current			qtdragon.spindle-amps				<=	vfdmod.parameters.vfd-output-current
+	net spindle-voltage			qtdragon.spindle-volts				<=	vfdmod.parameters.vfd-output-voltage
+	net spindle-conencted		qtdragon.spindle-modbus-connection	<=	vfdmod.rs485.is-connected
+	net spindle-comm-err		qtdragon.spindle-modbus-errors		<=	vfdmod.rs485.error-count
 	
 #Spindle feedback from hy_vfd
 
