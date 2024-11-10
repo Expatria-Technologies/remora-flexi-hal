@@ -48,7 +48,7 @@ These are shipped in place by default from the Expatria shop, but if they have b
 ## Reference config
 A reference config is included in the [LinuxCNC/ConfigSamples/flexi-hal](./LinuxCNC/ConfigSamples/flexi-hal) directory. **This will need to be edited for your specific machine.** 
 
-There are VFD options in the reference config for either vfdmod (configured for a Durapulse GS10 here), and hy_vfd (for Huanyang VFDs). If using hy_vfd, the vfdmod items will need to be commented out, and the hy_vfd items uncommented in [remora-flexi.hal](./LinuxCNC/ConfigSamples/flexi-hal/remora-flexi.hal).
+There are VFD options in the reference config for either vfdmod (configured for a Durapulse GS10 here), and hy_vfd (for Huanyang VFDs). If using hy_vfd, the vfdmod items will need to be commented out, and the hy_vfd items uncommented in [remora-flexi.hal](./LinuxCNC/ConfigSamples/flexi-hal/remora-flexi.hal) and [qtdragon_hd](./LinuxCNC/ConfigSamples/flexi-hal/qtdradon_hd.hal).
 
 Machine travels, limits, and other configuration is done in [remora-flexi.ini](./LinuxCNC/ConfigSamples/flexi-hal/remora-flexi.ini).
 
