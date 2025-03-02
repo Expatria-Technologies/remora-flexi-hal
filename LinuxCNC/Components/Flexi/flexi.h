@@ -5,14 +5,14 @@
 #define JOINTS 5    // Number of joints - set this the same as Remora firmware code. Max 8 joints
 #define VARIABLES 1 // Number of command values - set this the same Remora firmware code. Setpoints and Process Varaibles use this.
 #define DIGITAL_OUTPUTS 10
-#define DIGITAL_INPUTS 12
+#define DIGITAL_INPUTS 14
 
 
 
-const char INPUT_NAMES[DIGITAL_INPUTS][14] = {"X_LIMIT", "A_LIMIT", "PROBE", "Y_LIMIT", "KPSTR", "DOOR", "HALT", "FEED_HOLD", "CYCLE_START", "Z_LIMIT", "B_LIMIT", "SPINDLE_INDEX"};
+const char INPUT_NAMES[DIGITAL_INPUTS][14] = {"X_LIMIT", "A_LIMIT", "PROBE", "Y_LIMIT", "KPSTR", "DOOR", "HALT", "FEED_HOLD", "CYCLE_START", "Z_LIMIT", "B_LIMIT", "ENC_A", "ENC_B", "ENC_Z"};
 const char OUTPUT_NAMES[DIGITAL_OUTPUTS][13] = {"AUX2", "AUX3", "MIST", "AUX1", "SPINDLE_EN", "AUX0", "COOLANT", "STEP_EN", "STEP_EN_Z", "SPINDLE_DIR"};
 const char SETPOINT_NAMES[VARIABLES][12] = {"SPINDLE_PWM"};
-const char PV_NAMES[VARIABLES][12] = {"SPINDLE_ENC"};
+const char PV_NAMES[VARIABLES][1] = {};
 
 #define SPIBUFSIZE 64 //(4+4*JOINTS+4*COMMANDS+1) //(MAX_MSG*4) //20  SPI buffer size ......FIFO buffer size is 64 bytes?
 

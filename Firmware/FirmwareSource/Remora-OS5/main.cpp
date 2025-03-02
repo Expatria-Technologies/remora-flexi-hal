@@ -469,12 +469,12 @@ void loadModules()
     servoThread->registerModule(resetPin);
 
     //QEI, Process Variable 0
-    int pv = 0;
+    /*int pv = 0;
     ptrProcessVariable[pv]  = &txData.processVariable[pv];
     printf("Creating QEI, hardware quadrature encoder interface\n");
     Module* qei = new QEI(*ptrProcessVariable[pv], *ptrInputs, 11); // data bit for index is shared with digital inputs.
     //Module* qei = new QEI(*ptrProcessVariable[pv]); // No index pin
-    baseThread->registerModule(qei);
+    baseThread->registerModule(qei);*/
 
 
     //Spindle PWM

@@ -3,4 +3,4 @@ ROOT=.
 =
 >>>>>>> Stashed changes=undefined
 TARGET=FLEXIHAL
-TARGET_CODE=custom-387
+TARGET_CODE=custom-386

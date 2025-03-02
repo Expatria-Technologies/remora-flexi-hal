@@ -70,7 +70,10 @@ DigitalPinConfig DIConfigs[] = {{"X_LIMIT", "PA_5", PULLNONE, true, 0}, //Commen
                                 {"FD_HLD", "PC_8", PULLNONE, true, 7},
                                 {"CYC_START", "PC_11", PULLNONE, true, 8},
                                 {"Z_LIMIT", "PC_13", PULLNONE, true, 9},
-                                {"B_LIMIT", "PC_14", PULLNONE, true, 10}}; 
+                                {"B_LIMIT", "PC_14", PULLNONE, true, 10},
+                                {"ENC_A", "PA_0", PULLNONE, true, 11},
+                                {"ENC_B", "PA_1", PULLNONE, true, 12},
+                                {"ENC_Z", "PA_2", PULLNONE, true, 13}}; 
 
 PWMPinConfig PWMConfigs[] = {{"Spindle PWM", "PA_8"}};
 
