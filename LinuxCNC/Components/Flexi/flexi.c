@@ -374,6 +374,12 @@ if (bcm == true)
 		if (retval < 0)
 			goto error;
 		data->maxaccel[n] = 1.0;
+		
+		retval = hal_param_float_newf(HAL_RW, &(data->maxvel[n]),
+				comp_id, "%s.joint.%01d.maxvel", prefix, n);
+		if (retval < 0)
+			goto error;
+		data->maxvel[n] = 0;
 	}
 
 	for (n = 0; n < VARIABLES; n++)
