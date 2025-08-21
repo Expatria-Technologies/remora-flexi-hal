@@ -91,7 +91,7 @@ void QEIdriver::init()
     this->sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
     HAL_TIMEx_MasterConfigSynchronization(&this->htim, &this->sMasterConfig);
 
-    if (HAL_TIM_Encoder_Start(&this->htim, TIM_CHANNEL_2)!=HAL_OK)
+    if (HAL_TIM_Encoder_Start(&this->htim, TIM_CHANNEL_ALL)!=HAL_OK)
     {
         printf("Couldn't Start Encoder\r\n");
     }
