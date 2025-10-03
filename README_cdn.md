@@ -1,6 +1,8 @@
 # Remora Flexi-HAL
 
-This is a port of the excellent [Remora](https://github.com/scottalford75/Remora) firmware for the [Flexi-HAL](https://github.com/Expatria-Technologies/Flexi-HAL).
+This is a port of the excellent [Remora](https://github.com/scottalford75/Remora) firmware for the [Flexi-HAL](https://github.com/Expatria-Technologies/Flexi-HAL). 
+
+Using this firmware with LinuxCNC requires a Raspberry Pi 4 or 5 (Pi 5 is recommended). A pre-configured Pi image is avilable in the [Releases](https://github.com/Expatria-Technologies/Flexi-Pi/releases) section of the [Flexi-Pi](https://github.com/Expatria-Technologies/Flexi-Pi) repository, where you will also find some setup notes in the [README](https://github.com/Expatria-Technologies/Flexi-Pi/blob/master/README_cdn.md).
 
 Different in this fork from the 'standard' Remora is the lack of a config file. The board has a well defined set of inputs and outputs, typically with a single function. Within the LinuxCNC component the 'pins' are named intuitively to attempt to make HAL configuration easier. Pins are defined in board_config.h and the modules loaded in main.cpp in an attempt to keep the modules unmodified for easier maintenance as they are developed upstream.
 
