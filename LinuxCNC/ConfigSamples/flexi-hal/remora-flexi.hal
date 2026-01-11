@@ -87,7 +87,7 @@
 	net j0pos-fb flexi.joint.0.pos-fb => joint.0.motor-pos-fb
 	net j0enable joint.0.amp-enable-out => flexi.joint.0.enable
 
-	net x-home joint.0.home-sw-in => flexi.input.X_LIMIT
+	net x-home joint.0.home-sw-in <= flexi.input.X_LIMIT
 
 
 # Joint 1 setup
@@ -102,7 +102,7 @@
 	net j1pos-fb flexi.joint.1.pos-fb => joint.1.motor-pos-fb 
 	net j1enable joint.1.amp-enable-out => flexi.joint.1.enable
 
-	net y-home joint.1.home-sw-in => flexi.input.Y_LIMIT
+	net y-home joint.1.home-sw-in <= flexi.input.Y_LIMIT
 
 
 # Joint 2 setup
@@ -117,7 +117,7 @@
 	net j2pos-fb flexi.joint.2.pos-fb => joint.2.motor-pos-fb
 	net j2enable joint.2.amp-enable-out => flexi.joint.2.enable
 
-	net z-home joint.2.home-sw-in => flexi.input.Z_LIMIT
+	net z-home joint.2.home-sw-in <= flexi.input.Z_LIMIT
 
 
 # Joint 3 setup
@@ -132,7 +132,7 @@
 	net j3pos-fb flexi.joint.3.pos-fb => joint.3.motor-pos-fb
 	net j3enable joint.3.amp-enable-out => flexi.joint.3.enable
 
-	net A-home joint.3.home-sw-in => flexi.input.A_LIMIT
+	net A-home joint.3.home-sw-in <= flexi.input.A_LIMIT
 
 
 # Joint 4 setup
@@ -147,7 +147,7 @@
 #	net j4pos-fb flexi.joint.4.pos-fb => joint.4.motor-pos-fb
 #	net j4enable joint.4.amp-enable-out => flexi.joint.4.enable
 
-#	net b-home joint.4.home-sw-in => flexi.input.B_LIMIT
+#	net b-home joint.4.home-sw-in <= flexi.input.B_LIMIT
 
 
 # Motor enables
@@ -195,7 +195,7 @@
 	#net tool-number iocontrol.0.tool-prep-number => hal_manualtoolchange.number
 	#net tool-prepare-loopback iocontrol.0.tool-prepare => iocontrol.0.tool-prepared
 	
-	#This is forqtdradon_hd, comment out of using axis.
+	#This is for qtdradon_hd, comment out of using axis.
 	net tool-prepare-loopback iocontrol.0.tool-prepare => iocontrol.0.tool-prepared
 
 
