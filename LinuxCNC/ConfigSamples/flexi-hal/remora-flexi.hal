@@ -188,7 +188,7 @@
 
 # Manual toolchange
 
-	#These are for axis, uncomment these and remove qtdragon_toolchange from postgui_call_list.hal if using axis GUI.
+	#These are for axis, uncomment these and remove 'source qtdragon_hd.hal' from postgui_call_list.hal if using axis GUI.
 	#loadusr -W hal_manualtoolchange
 	#net tool-change iocontrol.0.tool-change => hal_manualtoolchange.change
 	#net tool-changed iocontrol.0.tool-changed <= hal_manualtoolchange.changed

@@ -3,6 +3,8 @@
 # If you make changes to this file, they will be
 # overwritten when you run stepconf again
 
-
+#comment this out if using Axis
 source qtdragon_hd.hal
+
+
 source custom_postgui.hal
