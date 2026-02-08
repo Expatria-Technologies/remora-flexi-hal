@@ -44,7 +44,7 @@
 	net spindle-reverse vfdmod.control.run-reverse => spindle.0.reverse
 
 # hy_vfd - uncomment the below if using hy_vfd. Use ttyAMA3 for Pi 4 and ttyAMA2 for Pi 5
-	#loadusr -Wn vfd hy_vfd -n vfd -d /dev/ttyAMA2 -p none -S24000 -r 9600 -s 1
+	#loadusr -Wn vfd hy_vfd -n vfd -d /dev/ttyAMA2 -p none -r 9600 -s 1
 	#loadrt scale names=spindle_fb_scale
 	#addf spindle_fb_scale servo-thread
 	#setp spindle_fb_scale.gain 0.016666667 # 1/60  to convert rpm to rps
