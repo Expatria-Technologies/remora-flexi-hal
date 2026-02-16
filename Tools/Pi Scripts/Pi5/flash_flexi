@@ -1,6 +1,8 @@
 #!/bin/bash
 
-# change back to home directory
+RETRIES=5
+COUNT=0
+
 cd
 
 if [ -z $1 ]
@@ -10,5 +12,27 @@ then
 fi
 
 ~/bootloader_flexi
-stm32flash /dev/ttyAMA0 -b 115200 -w $1
+
+while [ $COUNT -lt $RETRIES ]
+do
+	stm32flash /dev/ttyAMA0 -b 115200 -w $1
+	RETVAL=$?
+	if [ $RETVAL -eq 0 ]
+	then
+		echo "Success!"
+		break
+	fi
+	
+	((COUNT++))
+	
+	if [ $COUNT -lt $RETRIES ]
+	then
+		echo "Error flashing, retrying..."
+		sleep 2
+	else
+		echo "Error! Flashing unsuccessful!"
+		exit
+	fi
+done
+
 ~/reset_flexi
