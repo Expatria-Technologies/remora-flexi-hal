@@ -1,0 +1,8 @@
+#ifndef HARDWARECONFIG_H_
+#define HARDWARECONFIG_H_
+
+#define PERIPH_COUNT_IRQn 149
+
+
+
+#endif /* HARDWARECONFIG_H_ */
