@@ -209,7 +209,7 @@
                 "STM32F4",
                 "STM32F446xx",
                 "STM32F4xx",
-                "SPI_CS_IRQ=EXTI4_IRQn",
+                "SPI_CS_IRQ=EXTI15_10_IRQn",
                 "HSE_VALUE=25000000",
                 "STATIC_CONFIG=1",
                 "BOARD_FLEXI_HAL=1",

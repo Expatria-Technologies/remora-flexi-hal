@@ -17,7 +17,7 @@ StaticConfigHandler::StaticConfigHandler(Remora* _remora) :
 
 uint8_t StaticConfigHandler::loadConfiguration() {
 
-   printf("loading static config");
+   printf("loading static config\n");
 
 }
 

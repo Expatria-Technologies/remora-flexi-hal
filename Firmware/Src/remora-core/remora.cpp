@@ -67,6 +67,7 @@ Remora::Remora(std::shared_ptr<CommsHandler> commsHandler,
     baseTimer->setOwner(baseThread.get());
     baseThread->setTimer(std::move(baseTimer));
 
+
     servoThread = std::make_unique<pruThread>("ServoThread");
     servoTimer->setOwner(servoThread.get());
     servoThread->setTimer(std::move(servoTimer));
@@ -235,14 +236,14 @@ void Remora::run()
         printf("Loading static modules...");
 
         //std::shared_ptr<Module> _mod = factory->createModule(threadName, moduleType, modules[i], this);
-
+        
         // Create Stepgen modules directly rather than using module factory which is based on json config. TODO, stop being lazy here.
         for (size_t i = 0; i < StepgenConfigCount; i++) {
             printf("\nCreating step generator for Joint %i, %s\n", i, StepgenConfigs[i].Comment);
 
-            volatile int32_t& freqRef   = rxData.jointFreqCmd[i];
-            volatile int32_t& fbRef     = txData.jointFeedback[i];
-            volatile uint8_t& enRef     = rxData.jointEnable;
+            volatile int32_t* ptrJointFreqCmd = &rxData.jointFreqCmd[i];
+	        volatile int32_t* ptrJointFeedback = &txData.jointFeedback[i];
+	        volatile uint8_t* ptrJointEnable = &rxData.jointEnable;
 
             std::shared_ptr<Module> stepgen = std::make_shared<Stepgen>(
                 baseFreq,
@@ -250,13 +251,14 @@ void Remora::run()
                 "PB_0", //enable pin, handled elsewhere for Flexi. TODO, deal with this properly.
                 StepgenConfigs[i].StepPin,
                 StepgenConfigs[i].DirectionPin,
-                0, //stepBit
-                freqRef,
-                fbRef,
-                enRef,
-                false // usesModulePost
+                Config::stepBit,
+                *ptrJointFreqCmd,
+                *ptrJointFeedback,
+                *ptrJointEnable,
+                true // usesModulePost
             );
             baseThread->registerModule(stepgen);
+            baseThread->registerModulePost(stepgen);
         }
 
         //Digital outputs

@@ -21,13 +21,22 @@ extern "C" {
         }
     }
 
-    void EXTI9_5_IRQHandler(void) // For QEI, hardwired to use PA_8 (EXTI8) for index. 
+    void EXTI9_5_IRQHandler(void) // For QEI, hardwired to use PA_8 (EXTI8) for index. TODO fix this for flexi.
     {
         if (__HAL_GPIO_EXTI_GET_IT(GPIO_PIN_8) != RESET) {
             __HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_8);
             Interrupt::InvokeHandler(EXTI9_5_IRQn);
         }        
-    }    
+    }
+    
+    void EXTI15_10_IRQHandler(void) // used for our SPI NSS interrupt.
+    {
+        if (__HAL_GPIO_EXTI_GET_IT(GPIO_PIN_15) != RESET)
+        {
+            __HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_15);
+            Interrupt::InvokeHandler(EXTI15_10_IRQn);
+        }
+    }
 
     // macro for automatically creating the DMA Stream IRQ handlers, e.g DMA2_Stream0_IRQHandler()
     #define DMA_STREAM_IRQ_HANDLER(DMA_num, DMA_stream, IRQ_n)      \
