@@ -28,7 +28,7 @@ struct StepgenConfig {
 struct DigitalPinConfig {
     const char* Comment;
     const char* Pin;
-    const int Modifier; // OPENDRAIN, PULLUP, PULLDOWN, PULLNONE, NONE
+    const int Modifier;
     const bool Invert;
     const int DataBit;
 };
@@ -39,6 +39,14 @@ struct PWMPinConfig {
 
 };
 
+struct QEIPinConfig {
+    const char* Comment;
+    const int Modifier;
+    const int DataBit;
+    const char* EnableIndex;
+
+};     
+
 extern const StepgenConfig StepgenConfigs[];
 extern const size_t StepgenConfigCount;
 extern const DigitalPinConfig DOConfigs[];
@@ -47,6 +55,8 @@ extern const DigitalPinConfig DIConfigs[];
 extern const size_t DigitalInputCount;
 extern const PWMPinConfig PWMConfigs[];
 extern const size_t PWMCount;
+extern const QEIPinConfig QEIConfigs[];
+extern const size_t QEICount;
 extern const char* PRU_Reset_Pin;
 
 

@@ -10,7 +10,7 @@ Hardware_QEI::Hardware_QEI(bool _hasIndex, int _modifier) :
     {
         indexPin = new Pin(indexPortAndPin, GPIO_MODE_IT_RISING, modifier, GPIO_SPEED_FREQ_HIGH, 0);  
 
-        irqIndex = EXTI9_5_IRQn;
+        irqIndex = EXTI2_IRQn;
 
         IndexInterrupt = new ModuleInterrupt<Hardware_QEI>
         (
@@ -26,6 +26,7 @@ Hardware_QEI::Hardware_QEI(bool _hasIndex, int _modifier) :
 
 void Hardware_QEI::handleIndexInterrupt()
 {
+    printf("Encoder index detected");
     indexDetected = true;
     indexCount = get();
 }
@@ -41,14 +42,14 @@ void Hardware_QEI::init()
 
     QEI_TIM_CLK_ENABLE();
 
-    chAPin = new Pin(chAPortAndPin, GPIO_MODE_AF_PP, modifier, GPIO_SPEED_FREQ_HIGH, QEI_ALT);
+    chAPin = new Pin(chAPortAndPin, GPIO_MODE_AF_PP, modifier, GPIO_SPEED_FREQ_HIGH, QEI_ALT); //TODO, doesn't work yet.
     chBPin = new Pin(chBPortAndPin, GPIO_MODE_AF_PP, modifier, GPIO_SPEED_FREQ_HIGH, QEI_ALT);
 
     ptrTimHandler = get_shared_tim_handle(QEI_TIMER_INSTANCE);
     ptrTimHandler->Instance = QEI_TIMER_INSTANCE;
     ptrTimHandler->Init.Prescaler = 0;
     ptrTimHandler->Init.CounterMode = TIM_COUNTERMODE_UP;
-    ptrTimHandler->Init.Period = 65535;
+    ptrTimHandler->Init.Period = 0xFFFFFFFF; // using TIM5 which is 32 bits.
     ptrTimHandler->Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
     ptrTimHandler->Init.RepetitionCounter = 0;
     ptrTimHandler->Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
@@ -77,7 +78,7 @@ void Hardware_QEI::init()
         Error_Handler();
     }
 
-    if (HAL_TIM_Encoder_Start(ptrTimHandler, TIM_CHANNEL_2)!=HAL_OK)
+    if (HAL_TIM_Encoder_Start(ptrTimHandler, TIM_CHANNEL_ALL)!=HAL_OK)
     {
         printf("Couldn't Start Encoder\r\n");
     }

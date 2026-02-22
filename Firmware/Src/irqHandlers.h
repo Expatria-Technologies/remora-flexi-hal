@@ -21,11 +21,11 @@ extern "C" {
         }
     }
 
-    void EXTI9_5_IRQHandler(void) // For QEI, hardwired to use PA_8 (EXTI8) for index. TODO fix this for flexi.
+    void EXTI2_IRQHandler(void) // For QEI, hardwired to use PA_2 (EXTI2) for index.
     {
-        if (__HAL_GPIO_EXTI_GET_IT(GPIO_PIN_8) != RESET) {
-            __HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_8);
-            Interrupt::InvokeHandler(EXTI9_5_IRQn);
+        if (__HAL_GPIO_EXTI_GET_IT(GPIO_PIN_2) != RESET) {
+            __HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_2);
+            Interrupt::InvokeHandler(EXTI2_IRQn);
         }        
     }
     

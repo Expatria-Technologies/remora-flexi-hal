@@ -235,11 +235,9 @@ void Remora::run()
     {
         printf("Loading static modules...");
 
-        //std::shared_ptr<Module> _mod = factory->createModule(threadName, moduleType, modules[i], this);
-        
         // Create Stepgen modules directly rather than using module factory which is based on json config. TODO, stop being lazy here.
         for (size_t i = 0; i < StepgenConfigCount; i++) {
-            printf("\nCreating step generator for Joint %i, %s\n", i, StepgenConfigs[i].Comment);
+            printf("Creating step generator for Joint %i, %s\n", i, StepgenConfigs[i].Comment);
 
             volatile int32_t* ptrJointFreqCmd = &rxData.jointFreqCmd[i];
 	        volatile int32_t* ptrJointFeedback = &txData.jointFeedback[i];
@@ -263,9 +261,8 @@ void Remora::run()
 
         //Digital outputs
         volatile uint16_t* ptrOutputs = &rxData.outputs;
-
         for (size_t i = 0; i < DigitalOutputCount; i++) {
-            printf("\nCreating digital output for %s\n", DOConfigs[i].Comment);
+            printf("Creating digital output for %s\n", DOConfigs[i].Comment);
             std::shared_ptr<Module> digitalOutput = std::make_shared<DigitalPin>(
                 *ptrOutputs,
                 1, //mode, 1 = output
@@ -280,9 +277,8 @@ void Remora::run()
 
         //Digital inputs
         volatile uint16_t* ptrInputs = &txData.inputs;
-
         for (size_t i = 0; i < DigitalInputCount; i++) {
-            printf("\nCreating digital input for %s\n", DIConfigs[i].Comment);
+            printf("Creating digital input for %s\n", DIConfigs[i].Comment);
             std::shared_ptr<Module> digitalInput = std::make_shared<DigitalPin>(
                 *ptrInputs,
                 0, //mode, 0 = input
@@ -302,18 +298,32 @@ void Remora::run()
             PRU_Reset_Pin
             );
 
-        baseThread->registerModule(resetPin);  // Register PRU reset module
+        servoThread->registerModule(resetPin);  // Register PRU reset module
 
         //Spindle PWM
         for (size_t i = 0; i < PWMCount; i++) {
-            printf("\nCreating PWM for %s at pin %s\n", PWMConfigs[i].Comment, PWMConfigs[i].Pin);
-            printf("TODO. Not yet implemented.");
+            printf("Creating PWM for %s at pin %s\n", PWMConfigs[i].Comment, PWMConfigs[i].Pin);
+            printf("TODO. Software PWM not yet implemented.");
             //TODO - Port in software PWM module. Needed here.
         }
 
+        //QEI
+        for (size_t i = 0; i < QEICount; i++) {
 
-        //QEI, Process Variable 0
-        //TODO
+            volatile float* ptrProcessVariable  = &txData.processVariable[i];
+
+            printf("Creating QEI for %s\n", QEIConfigs[i].Comment);
+            if (!strcmp(QEIConfigs[i].EnableIndex,"True"))
+            {
+                printf("  Encoder has index\n");
+                std::make_unique<QEI>(*ptrProcessVariable, *ptrInputs, QEIConfigs[i].DataBit, QEIConfigs[i].Modifier);
+            }
+            else
+            {
+                std::make_unique<QEI>(*ptrProcessVariable, QEIConfigs[i].Modifier);
+            }
+        }
+
 
 
 
