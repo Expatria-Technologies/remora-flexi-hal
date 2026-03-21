@@ -62,7 +62,7 @@
 	#loadrt scale names=spindle_speed_scale
 	#addf spindle_speed_scale servo-thread
 	#setp spindle_speed_scale.gain 0.004167 # volts per RPM, calculated over full scale. [max output voltage]/[Max spindle speed] * 10 Example: 0-10V, 24000 rpm: (10/24000) * 10 = 0.004167
-	#net spindle-scale-in spindle.0.speed-out => spindle_speed_scale.in
+	#net spindle-scale-in spindle.0.speed-out-abs => spindle_speed_scale.in
 	#net spindle-speed-scaled spindle_speed_scale.out => flexi.SP.SPINDLE_PWM
 	#net spindle-enable spindle.0.on => flexi.output.SPINDLE_EN
 
