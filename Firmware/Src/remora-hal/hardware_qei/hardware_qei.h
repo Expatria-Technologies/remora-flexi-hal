@@ -10,7 +10,6 @@
 #define QEI_TIMER_INSTANCE      TIM5
 #define QEI_TIM_CLK_ENABLE      __HAL_RCC_TIM5_CLK_ENABLE
 #define QEI_ALT                 GPIO_AF2_TIM5
-#define PULSE_DIVIDER           2       // QEI counts on every rise and fall, but to correct for actual PPR, needs to be >> 2, divide by 4. 
 
 class Hardware_QEI
 {

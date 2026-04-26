@@ -313,15 +313,17 @@ void Remora::run()
             volatile float* ptrProcessVariable  = &txData.processVariable[i];
 
             printf("Creating QEI for %s\n", QEIConfigs[i].Comment);
+            std::shared_ptr<Module> qei;
             if (!strcmp(QEIConfigs[i].EnableIndex,"True"))
             {
                 printf("  Encoder has index\n");
-                std::make_unique<QEI>(*ptrProcessVariable, *ptrInputs, QEIConfigs[i].DataBit, QEIConfigs[i].Modifier);
+                qei = std::make_shared<QEI>(*ptrProcessVariable, *ptrInputs, QEIConfigs[i].DataBit, QEIConfigs[i].Modifier);
             }
             else
             {
-                std::make_unique<QEI>(*ptrProcessVariable, QEIConfigs[i].Modifier);
+                qei = std::make_shared<QEI>(*ptrProcessVariable, QEIConfigs[i].Modifier);
             }
+            servoThread->registerModule(qei);
         }
 
 

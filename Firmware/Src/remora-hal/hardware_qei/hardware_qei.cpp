@@ -33,7 +33,7 @@ void Hardware_QEI::handleIndexInterrupt()
 
 uint32_t Hardware_QEI::get()
 {
-    return __HAL_TIM_GET_COUNTER(ptrTimHandler) >> PULSE_DIVIDER;
+    return __HAL_TIM_GET_COUNTER(ptrTimHandler);
 }
 
 void Hardware_QEI::init()
@@ -42,7 +42,7 @@ void Hardware_QEI::init()
 
     QEI_TIM_CLK_ENABLE();
 
-    chAPin = new Pin(chAPortAndPin, GPIO_MODE_AF_PP, modifier, GPIO_SPEED_FREQ_HIGH, QEI_ALT); //TODO, doesn't work yet.
+    chAPin = new Pin(chAPortAndPin, GPIO_MODE_AF_PP, modifier, GPIO_SPEED_FREQ_HIGH, QEI_ALT);
     chBPin = new Pin(chBPortAndPin, GPIO_MODE_AF_PP, modifier, GPIO_SPEED_FREQ_HIGH, QEI_ALT);
 
     ptrTimHandler = get_shared_tim_handle(QEI_TIMER_INSTANCE);
