@@ -3,7 +3,7 @@
 
 # Remora Flexi-HAL
 
-This is a port of the excellent [Remora](https://github.com/scottalford75/Remora) firmware for the [Flexi-HAL](https://github.com/Expatria-Technologies/Flexi-HAL). 
+This is a port of the excellent [Remora](https://github.com/scottalford75/Remora) firmware for the [Flexi-HAL](https://github.com/Expatria-Technologies/Flexi-HAL). Based on [Ben Jacobson's port](https://github.com/ben-jacobson/Remora-STM32F4xx-PIO) of the new remora-core abstraction for the STM32F4. Modified for Flexi-HAL with a static config and the Flexi component which uses named HAL pins that match the PCB. 
 
 Using this firmware with LinuxCNC requires a Raspberry Pi 4 or 5 (Pi 5 is recommended). A pre-configured Pi image is avilable in the [Releases](https://github.com/Expatria-Technologies/Flexi-Pi/releases) section of the [Flexi-Pi](https://github.com/Expatria-Technologies/Flexi-Pi) repository, where you will also find some setup notes in the [README](https://github.com/Expatria-Technologies/Flexi-Pi/blob/master/README_cdn.md).
 
@@ -15,7 +15,7 @@ The uf2 bootloader can be found here if you want to restore it:
 
 https://github.com/Expatria-Technologies/tinyuf2/releases
 
-Firmware must be built with Mbed Studio with the 'FLEXIHAL' target, and the 'Release' configuration must be selected. A pre-compiled binary is provided in the FirmwareBin directory for convenience. 
+Firmware is built with PlatformIO, using the flexi_spi target configured here. `platformio run --environment flexi_spi` will build the firmware.
 
 
 ## Changes
