@@ -7,6 +7,7 @@
 #include "../../remora.h"
 #include "../../modules/module.h"
 #include "remora-hal/hardware_pwm/hardware_pwm.h"
+#include "SoftPWM/SoftPWM.h"
 
 #define DEFAULT_PWM_PERIOD 100 // 100us
 #define PWMMAX 256
@@ -18,12 +19,15 @@ class PWM : public Module
 		int pwmMax;					        // maximum PWM output
 
 		HardwarePWM *hardware_PWM;
+		SoftPWM *software_PWM;
+		bool useSoftwarePWM;
 
         volatile float *ptrPwmPeriod; 	    // pointer to the data source
 		volatile float *ptrPwmPulseWidth; 	// pointer to the data source
 
         float pwmPeriod_us;                      // Period (us)
         float pwmPulseWidth;                // Pulse width (%)
+        float pwmLast;                    // Last value for change detection
 
 		bool variable_freq;
 
@@ -31,6 +35,8 @@ class PWM : public Module
 
 	public:
 		PWM(volatile float&, volatile float&, bool, int, int, std::string);
+		PWM(volatile float&, int, std::string, bool);
+		PWM(volatile float*, volatile float*, bool, int, int, std::string);
 		static std::shared_ptr<Module> create(const JsonObject& config, Remora* instance);
 
 		virtual void update(void);          // Module default interface

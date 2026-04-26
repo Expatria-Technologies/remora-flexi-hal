@@ -31,12 +31,13 @@ std::shared_ptr<Module> PWM::create(const JsonObject& config, Remora* instance)
    
     // Create pointers for set point variables
 
-    variable_pointers[sp] = &instance->getRxData()->setPoint[sp];  // sp value will store the duty cycle.  
+variable_pointers[sp] = &instance->getRxData()->setPoint[sp];  // sp value will store the duty cycle.  
     variable_pointers[period_sp] = &instance->getRxData()->setPoint[period_sp]; // todo - if this isn't enabled what does it do, see if we can check for errors. 
     
     if (!strcmp(hardware, "False")) // Software PWM
     {
-        printf("Software PWM not yet supported\n");
+        printf("Creating Software PWM at pin %s\n", pin);
+        return std::make_unique<PWM>(*variable_pointers[sp], pwmMax, pin, false);
     }
 
     bool variable_freq = !strcmp(variable, "True");
@@ -45,12 +46,30 @@ std::shared_ptr<Module> PWM::create(const JsonObject& config, Remora* instance)
 
 /***********************************************************************
                 METHOD DEFINITIONS
-************************************************************************/
+ ************************************************************************/
 
-PWM::PWM(volatile float &_ptrPwmPeriod, volatile float &_ptrPwmPulseWidth, bool _variable_freq, int _fixed_period_us, int _pwmMax, std::string _pin):
-    ptrPwmPeriod(&_ptrPwmPeriod),
+// Software PWM constructor
+PWM::PWM(volatile float &_ptrPwmPulseWidth, int _pwmMax, std::string _pin, bool _useSoftware):
+    ptrPwmPeriod(nullptr),
+    pwmMax(_pwmMax),
+    pin(_pin),
+    useSoftwarePWM(_useSoftware),
+    variable_freq(false),
+    pwmLast(-1.0f)
+{
+    pwmPulseWidth = _ptrPwmPulseWidth;
+    ptrPwmPulseWidth = &_ptrPwmPulseWidth;
+    setPwmMax(pwmMax);
+    software_PWM = new SoftPWM(pin);
+    software_PWM->setMaxPwm(pwmMax);
+    hardware_PWM = nullptr;
+}
+
+// Hardware PWM constructor (pointer version)
+PWM::PWM(volatile float *_ptrPwmPeriod, volatile float *_ptrPwmPulseWidth, bool _variable_freq, int _fixed_period_us, int _pwmMax, std::string _pin):
+    ptrPwmPeriod(_ptrPwmPeriod),
     variable_freq(_variable_freq),
-    ptrPwmPulseWidth(&_ptrPwmPulseWidth),
+    ptrPwmPulseWidth(_ptrPwmPulseWidth),
     pwmMax(_pwmMax),
     pin(_pin)
 {
@@ -74,6 +93,7 @@ PWM::PWM(volatile float &_ptrPwmPeriod, volatile float &_ptrPwmPulseWidth, bool 
     setPwmMax(pwmMax);
     
     hardware_PWM = new HardwarePWM(pwmPeriod_us, pwmPulseWidth, pin); 
+    software_PWM = nullptr;
 }
 
 void PWM::setPwmMax(int pwmMax) 
@@ -83,7 +103,31 @@ void PWM::setPwmMax(int pwmMax)
 
 void PWM::update()
 {
-    if (variable_freq == true) 
+    if (useSoftwarePWM)
+    {
+        float val = *(ptrPwmPulseWidth);
+        if (val != pwmLast)
+        {
+            pwmPulseWidth = val;
+            pwmLast = val;
+
+            if (pwmPulseWidth <= 0)
+            {
+                software_PWM->setPwmSP(0);
+            }
+            else if (pwmPulseWidth >= 100)
+            {
+                software_PWM->setPwmSP(255);  // Max valid value for SoftPWM
+            }
+            else
+            {
+                int sp = (int)(255 * (pwmPulseWidth / 100.0));
+                software_PWM->setPwmSP(sp);
+            }
+        }
+        software_PWM->update();
+    }
+    else if (variable_freq == true) 
     {    
         if (*(ptrPwmPeriod) != 0 && (*(ptrPwmPeriod) != pwmPeriod_us))
         {

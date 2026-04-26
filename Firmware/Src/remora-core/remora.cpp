@@ -18,6 +18,7 @@
 */
 
 #include "remora.h"
+#include "modules/pwm/pwm.h"
 #include "../irqHandlers.h"
 #include "interrupt/interrupt.h"
 
@@ -52,10 +53,10 @@ Remora::Remora(std::shared_ptr<CommsHandler> commsHandler,
 	  serialFreq(serialTimer ? serialTimer->getFrequency() : 0),
 	  threadsRunning(false)
 {
-	#ifndef STATIC_CONFIG //TODO - Static config
+	#ifndef STATIC_CONFIG
         configHandler = std::make_unique<JsonConfigHandler>(this);
     #else
-        configHandler = std::make_unique<StaticConfigHandler>(this); //TODO
+        configHandler = std::make_unique<StaticConfigHandler>(this);
     #endif
 
     updateHeader();
@@ -235,7 +236,6 @@ void Remora::run()
     {
         printf("Loading static modules...");
 
-        // Create Stepgen modules directly rather than using module factory which is based on json config. TODO, stop being lazy here.
         for (size_t i = 0; i < StepgenConfigCount; i++) {
             printf("Creating step generator for Joint %i, %s\n", i, StepgenConfigs[i].Comment);
 
@@ -303,8 +303,9 @@ void Remora::run()
         //Spindle PWM
         for (size_t i = 0; i < PWMCount; i++) {
             printf("Creating PWM for %s at pin %s\n", PWMConfigs[i].Comment, PWMConfigs[i].Pin);
-            printf("TODO. Software PWM not yet implemented.");
-            //TODO - Port in software PWM module. Needed here.
+
+            std::shared_ptr<Module> pwm = std::make_shared<PWM>(rxData.setPoint[PWMConfigs[i].SPIndex], PWMConfigs[i].PWMMax, PWMConfigs[i].Pin, true);
+            servoThread->registerModule(pwm);
         }
 
         //QEI

@@ -36,7 +36,8 @@ struct DigitalPinConfig {
 struct PWMPinConfig {
     const char* Comment;
     const char* Pin;
-
+    const int SPIndex;      // setPoint index for PWM control
+    const int PWMMax;     // maximum PWM value (0-256)
 };
 
 struct QEIPinConfig {

@@ -45,7 +45,7 @@ const DigitalPinConfig DIConfigs[] = {{"X_LIMIT", "PA_5", GPIO_NOPULL, true, 0},
 const size_t DigitalInputCount = sizeof(DIConfigs) / sizeof(DIConfigs[0]);
 
 
-const PWMPinConfig PWMConfigs[] = {{"SPINDLE_PWM", "PA_8"}};
+const PWMPinConfig PWMConfigs[] = {{"SPINDLE_PWM", "PA_8", 0, 256}}; //Comment, pin, SP index, PWM max
 const size_t PWMCount = sizeof(PWMConfigs) / sizeof(PWMConfigs[0]);
 
 
