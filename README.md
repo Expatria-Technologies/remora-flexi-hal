@@ -3,7 +3,7 @@
 
 # Remora Flexi-HAL
 
-This is a port of the excellent [Remora](https://github.com/scottalford75/Remora) firmware for the [Flexi-HAL](https://github.com/Expatria-Technologies/Flexi-HAL). Based on [Ben Jacobson's port](https://github.com/ben-jacobson/Remora-STM32F4xx-PIO) of the new remora-core abstraction for the STM32F4. Modified for Flexi-HAL with a static config and the Flexi component which uses named HAL pins that match the PCB. 
+This is a port of the excellent [Remora](https://github.com/scottalford75/Remora) firmware for the [Flexi-HAL](https://github.com/Expatria-Technologies/Flexi-HAL). Based on [Ben Jacobson's port](https://github.com/ben-jacobson/Remora-STM32F4xx-PIO) of the new remora-core abstraction for the STM32F4, modified for Flexi-HAL with a static config and the Flexi component which uses named HAL pins that match the PCB. 
 
 Using this firmware with LinuxCNC requires a Raspberry Pi 4 or 5 (Pi 5 is recommended). A pre-configured Pi image is avilable in the [Releases](https://github.com/Expatria-Technologies/Flexi-Pi/releases) section of the [Flexi-Pi](https://github.com/Expatria-Technologies/Flexi-Pi) repository, where you will also find some setup notes in the [README](https://github.com/Expatria-Technologies/Flexi-Pi/blob/master/README_cdn.md).
 
