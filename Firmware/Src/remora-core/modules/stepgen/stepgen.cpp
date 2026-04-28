@@ -57,8 +57,9 @@ Stepgen::Stepgen(int32_t _threadFreq, int _jointNumber, const char* _enable, con
       frequencyScale(1.0f * (1 << _stepBit) / _threadFreq),  // Frequency scaling without unnecessary cast
       mask(1 << _jointNumber),  // Mask for checking the joint number
       isEnabled(false),
-      isForward(false),
-      isStepping(false)
+       isForward(false),
+       lastDir(false),
+       isStepping(false)
 {
 	usesModulePost = _usesModulePost;
 }
@@ -128,10 +129,17 @@ void Stepgen::makePulses()
     // Determine direction based on the sign of DDSaddValue
     isForward = DDSaddValue > 0;
 
-    // If a step is to be made, set the direction and step pins accordingly
-    if (stepNow)
+    // Check if direction has changed
+    if (lastDir != isForward)
     {
-        directionPin.set(isForward);  // Set direction pin
+        // Direction has changed, flip dir pin and do not step this iteration
+        // to give some setup time. At 160kHz base thread freq, this should be
+        // about 6.25us, at 120kHz 8.33us (1 period). JMC servos require 6us.
+        lastDir = isForward;
+        directionPin.set(isForward); // Set direction pin
+    }
+    else if (stepNow)
+    {
         stepPin.set(true);  // Set the step pin
         rawCount += (isForward ? 1 : -1);  // Update rawCount based on direction
         *ptrFeedback = rawCount;  // Update the feedback with the raw count

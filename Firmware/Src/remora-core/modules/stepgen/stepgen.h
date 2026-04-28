@@ -41,6 +41,7 @@ private:
 
 	bool isEnabled;                			/**< Flag indicating whether the step generator is enabled */
 	bool isForward;                			/**< Current direction (forward or backward) */
+	bool lastDir;							/**< Last direction, used for dir setup time */
 	bool isStepping;               			/**< Flag indicating whether stepping is occurring */
 
 	void makePulses();             			/**< Generates step pulses */
